@@ -115,7 +115,21 @@ and authorize the API. To do so the following steps have to be taken:
 <li> then you are redirected to the Mendeley web site to authorize the request, and redirected back to the blog
 <li> now you can use shortcodes in your pages and blogs
 </ol> 
+
+<h3>JSON data source</h3>
+
+In version 0.7 we added the functionality to create a JSON data source - e.g. to be used as data source in Exhibit/Simile application.
+
+For example the page http://www.kooperationssysteme.de/pub/cscm/ uses such a data source in an interactive JavaScript application to search the references.
+
+The following line is used in the Exhibit/Simile application:
+
+<link href="/index.php?mendeley_action=export-json&id=763&type=groups" type="application/json" rel="exhibit/data" />
  
+In the directory examples you find a file bibexhibit.tpl.php that can be placed in your Wordpress theme directory. Then you can create a new page with the Template BibExhibit that will show the application with the data source.
+
+<h3>Thanks ...</h3>
+
 Thanks for contributions to Rhodri Cusack and Matthias Budde.
 
 == Installation ==
@@ -145,6 +159,9 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 0.7 =
+* added support for creating JSON files with references on demand - e.g. to be used as a data source for Simile/Exhibit
 
 = 0.6.7 =
 * some bug fixes / additional handling regarding the new author data format
