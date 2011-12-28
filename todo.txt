@@ -1,0 +1,2 @@
+TODOs for the plugin:
+- lookup collections by name
