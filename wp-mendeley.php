@@ -1040,6 +1040,7 @@ class MendeleyCollectionWidget extends WP_Widget {
 
     /** @see WP_Widget::widget */
     function widget($args, $instance) {		
+	global $mendeleyPlugin;
         extract( $args );
         $title = apply_filters('widget_title', $instance['title']);
         // collectiony type (folder, group)
@@ -1061,6 +1062,7 @@ class MendeleyCollectionWidget extends WP_Widget {
 				$result .= $mendeleyPlugin->formatWidget($ctype, $cid, $maxdocs, array($filterattr => $filterval));
 			}
 			$result .= '</ul>';
+			echo $result;
                ?>
               <?php echo $after_widget; ?>
         <?php
@@ -1068,13 +1070,13 @@ class MendeleyCollectionWidget extends WP_Widget {
 
     /** @see WP_Widget::update */
     function update($new_instance, $old_instance) {				
-		$instance = $old_instance;
-		$instance['title'] = strip_tags($new_instance['title']);
-		$instance['ctype'] = strip_tags($new_instance['ctype']);
-		$instance['cid'] = strip_tags($new_instance['cid']);
-		$instance['count'] = strip_tags($new_instance['count']);
-		$instance['filterattr'] = strip_tags($new_instance['filterattr']);
-		$instance['filterval'] = strip_tags($new_instance['filterval']);
+	$instance = $old_instance;
+	$instance['title'] = strip_tags($new_instance['title']);
+	$instance['ctype'] = strip_tags($new_instance['ctype']);
+	$instance['cid'] = strip_tags($new_instance['cid']);
+	$instance['count'] = strip_tags($new_instance['count']);
+	$instance['filterattr'] = strip_tags($new_instance['filterattr']);
+	$instance['filterval'] = strip_tags($new_instance['filterval']);
         return $instance;
     }
 

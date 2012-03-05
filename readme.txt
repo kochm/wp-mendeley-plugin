@@ -146,6 +146,12 @@ Thanks for contributions to Rhodri Cusack and Matthias Budde.
 
 <p>There are some reported problems with other plugins that are using the OAuth PHP library like tweetblender: If the other plugin does not check if the library is already loaded (as ours does), initializing the other plugins after wp_mendeley will result in an error message. In this case deactivate the other plugin.</p>
 
+<p>Tutorials / descriptions contributed by others:
+<ul>
+<li><a href="http://tramullas.com/2012/02/23/integrando-mendeley-en-wordpress-2/">Spanish tutorial about installing and using the plugin (v0.7)</a> by Jesús Tramullas</li>
+</ul>
+</p>
+
 == Upgrade Notice ==
 
 To upgrade the plugin, just deactivate the plugin, overwrite the plugin directory, and reactivate it - or use the automatic upgrade mechanism in WordPress.
@@ -159,6 +165,10 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 0.7.1 =
+* added link to spanisch tutorial
+* bug fix in widgets: missing declaration ob global variable $mendeleyPlugin
 
 = 0.7 =
 * added support for creating JSON files with references on demand - e.g. to be used as a data source for Simile/Exhibit
