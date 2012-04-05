@@ -24,8 +24,9 @@ The lists can be included in posts or pages using WordPress shortcodes:
 &#91;mendeley type="documents" id="authored" groupby="year"&#93;
 &#91;mendeley type="documents" id="authored" filter="tag=perceptualorganization"&#93;
 &#91;mendeley type="documents" id="authored" sortby="authors" sortbyorder="asc" groupby="year" grouporder="desc"%#93;
+&#91;mendeley type="own" id="0"%#93;
 
-- the attribute "type" can be set to "folders", "groups", "documents"
+- the attribute "type" can be set to "own", "folders", "groups", "documents"
 - the attribute "groupby" is optional; possible values currently are: "authors", "year"
 - the attribute "sortby" is optional; possible values currently are: "authors", "year"
 - the attributes "sortbyorder" and "groupbyorder" can have the values "asc" and "desc"
@@ -165,6 +166,10 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 0.7.2 =
+* added possibility to display own publications (type = 'own')
+* added widget for displaying own publications
 
 = 0.7.1 =
 * added link to spanisch tutorial

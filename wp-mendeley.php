@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.7
+Version: 0.7.2
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -13,7 +13,7 @@ Description: This plugin offers the possibility to load lists of document refere
 /* 
 The MIT License
 
-Copyright (c) 2010-2011 Michael Koch (email: michael.koch@acm.org)
+Copyright (c) 2010-2012 Michael Koch (email: michael.koch@acm.org)
  
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -103,6 +103,7 @@ if (!class_exists("MendeleyPlugin")) {
 		}
 		
 		// format a set of references (folders, groups, documents)
+		/* type = 'own' for own publications */
 		function formatCollection($attrs = NULL, $maxdocs = 0, $style="standard") {
 			$type = $attrs['type'];
 			if (empty($type)) { $type = "folders"; }
@@ -117,6 +118,7 @@ if (!class_exists("MendeleyPlugin")) {
 			if ($type === "folder") { $type = "folders"; }
 			if ($type === "group") { $type = "groups"; }
 			$id = $attrs['id'];
+			if (empty($id)) { $id = 0; }
 			$groupby = $attrs['groupby'];
 			$grouporder = $attrs['grouporder'];
 			if (empty($grouporder)) {
@@ -156,7 +158,7 @@ if (!class_exists("MendeleyPlugin")) {
 			if ($this->settings['debug'] === 'true') {
 				$result .= "<p>Mendeley Plugin: groupby = $groupby, sortby = $sortby, sortorder = $sortorder, filter = $filter</p>";
 			}
-			// type can be folders, groups, documents
+			// type can be own, folders, groups, documents
 			$res = $this->getItemsByType($type, $id);
 			// process the data
 			$docarr = $this->loadDocs($res, $type, $id);
@@ -254,7 +256,7 @@ if (!class_exists("MendeleyPlugin")) {
 		}
 
 		
-		// One function handles documents, groups, folders, ...
+		// One function handles own, documents, groups, folders, ...
 		/* get the ids of all documents in a Mendeley collection
 		   and return them in an array */
 		function getItemsByType($type,$id) {
@@ -267,6 +269,9 @@ if (!class_exists("MendeleyPlugin")) {
 				return $doc_ids;
 			}
 			$url = MENDELEY_OAPI_URL . "library/$type/$id/?page=0&items=1000";
+			if ($type === "own") { 
+				$url = MENDELEY_OAPI_URL . "library/documents/authored/?page=0&items=1000";
+			}
 			$result = $this->sendAuthorizedRequest($url);
 			$this->updateCollectionInCache($cacheid, $result);
 			$doc_ids = $result->document_ids;
@@ -646,8 +651,8 @@ if (!class_exists("MendeleyPlugin")) {
 			update_option($this->adminOptionsName, $this->settings);
 			// initialize some variables
 			$consumer_key = $this->settings['consumer_key'];
-            $consumer_secret = $this->settings['consumer_secret'];
-            $this->consumer = new OAuthConsumer($consumer_key, $consumer_secret, NULL);
+            		$consumer_secret = $this->settings['consumer_secret'];
+            		$this->consumer = new OAuthConsumer($consumer_key, $consumer_secret, NULL);
 			$this->sign_method = new OAuthSignatureMethod_HMAC_SHA1();
 			$acc_token = $this->settings['access_token'];
 			$acc_token_secret = $this->settings['access_token_secret'];
@@ -797,6 +802,7 @@ The lists can be included in posts or pages using WordPress shortcodes:
 <li>- [mendeley type="groups" id="xxx" groupby="" filter=""], filter=ATTRNAME=AVALUE, e.g. author=Michael Koch
 <li>- [mendeley type="documents" id="authored" groupby="year"]
 <li>- [mendeley type="documents" id="123456789"]
+<li>- [mendeley type="own"]
 <li>- ... (see readme.txt for more examples)
 </ul></p>
 
@@ -900,6 +906,7 @@ and stored in the plugin.</p>
 /* functions to be used in non-widgetized themes instead of widgets */
 
 		/* return formatted version of collection elements */
+		/* type = 'own', id = 0 for own publications */
 		function formatWidget($type, $id, $maxdocs = 10, $filter = NULL) {
 			if (is_null($id)) return '';
 			$attrs = Array();
@@ -1100,8 +1107,58 @@ class MendeleyCollectionWidget extends WP_Widget {
 
 } // class MendleyCollectionWidget
 
-// register MendeleyWidget widget
+/**
+ * MendeleyOwnWidget Class
+ */
+class MendeleyOwnWidget extends WP_Widget {
+    /** constructor */
+    function MendeleyOwnWidget() {
+        parent::WP_Widget(false, $name = 'Mendeley Collection');	
+    }
+
+    /** @see WP_Widget::widget */
+    function widget($args, $instance) {		
+	global $mendeleyPlugin;
+        extract( $args );
+        $title = apply_filters('widget_title', $instance['title']);
+        $maxdocs = apply_filters('widget_cid', $instance['count']);
+        ?>
+              <?php echo $before_widget; ?>
+                  <?php if ( $title )
+                        echo $before_title . $title . $after_title; ?>
+              <?php
+              		$result = '<ul class="wpmlist">';
+			$result .= $mendeleyPlugin->formatWidget('own', 0, $maxdocs);
+			$result .= '</ul>';
+			echo $result;
+               ?>
+              <?php echo $after_widget; ?>
+        <?php
+    }
+
+    /** @see WP_Widget::update */
+    function update($new_instance, $old_instance) {				
+	$instance = $old_instance;
+	$instance['title'] = strip_tags($new_instance['title']);
+	$instance['count'] = strip_tags($new_instance['count']);
+        return $instance;
+    }
+
+    /** @see WP_Widget::form */
+    function form($instance) {				
+        $title = esc_attr($instance['title']);
+        $count = esc_attr($instance['count']);
+        ?>
+        <p><label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo $title; ?>" /></label></p>
+ 	<p><label for="<?php echo $this->get_field_id('count'); ?>"><?php _e('Number of docs to display:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('count'); ?>" name="<?php echo $this->get_field_name('count'); ?>" type="text" value="<?php echo $count; ?>" /></label></p>
+        <?php 
+    }
+
+} // class MendleyOwnWidget
+
+// register Mendeley widgets
 add_action('widgets_init', create_function('', 'return register_widget("MendeleyCollectionWidget");'));
+add_action('widgets_init', create_function('', 'return register_widget("MendeleyOwnWidget");'));
 
 
 /***************************************************************************
