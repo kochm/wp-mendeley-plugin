@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.7.2
+Version: 0.7.3
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -158,6 +158,14 @@ if (!class_exists("MendeleyPlugin")) {
 			if ($this->settings['debug'] === 'true') {
 				$result .= "<p>Mendeley Plugin: groupby = $groupby, sortby = $sortby, sortorder = $sortorder, filter = $filter</p>";
 			}
+
+			// output caching
+			$cacheid = $type."-".$id."-".$groupby.$grouporder."-".$sortby.$sortorder."-".$filterattr.$filterval."-".$maxdocs;
+			$cacheresult = $this->getOutputFromCache($cacheid);
+			if (!empty($cacheresult)) {
+				return $result.$cacheresult;
+			}
+
 			// type can be own, folders, groups, documents
 			$res = $this->getItemsByType($type, $id);
 			// process the data
@@ -206,6 +214,7 @@ if (!class_exists("MendeleyPlugin")) {
 					if ($count > $maxdocs) break;
 				}	
 			}
+			$this->updateOutputInCache($cacheid, $result);
 			return $result;
 		}		
 
@@ -541,7 +550,7 @@ if (!class_exists("MendeleyPlugin")) {
 
 		/* create database tables for the caching functionality */
 		/* database fields:
-		     type = 0 (document), 1 (folder), 2 (group)
+		     type = 0 (document), 1 (folder), 2 (group), 10 (output)
 		     mid = Mendeley id as string
 		     time = timestamp
 		*/
@@ -603,6 +612,23 @@ if (!class_exists("MendeleyPlugin")) {
 		function getCollectionFromCache($cid) {
 			return $this->getFolderFromCache($cid);
 		}
+		function getOutputFromCache($cid) {
+			global $wpdb;
+			if ("$cid" === "") return NULL;
+			if ($this->settings['cache_output'] === "no") return NULL;
+			$table_name = $wpdb->prefix . "mendeleycache";
+			$dbdoc = $wpdb->get_row("SELECT * FROM $table_name WHERE type=10 AND mid='$cid'");
+			if ($dbdoc) {
+				// check timestamp
+				$delta = 3600;
+				if ($this->settings['cache_output'] === "day") { $delta = 86400; }
+				if ($this->settings['cache_output'] === "week") { $delta = 604800; }
+				if ($dbdoc->time + $delta > time()) {
+					return json_decode($dbdoc->content);
+				}
+			}
+			return NULL;
+		}
 		/* add data to database */
 		function updateDocumentInCache($docid, $doc) {
 			global $wpdb;
@@ -627,6 +653,16 @@ if (!class_exists("MendeleyPlugin")) {
 		function updateCollectionInCache($cid, $doc) {
 			return $this->updateFolderInCache($cid, $doc);
 		}
+		function updateOutputInCache($cid, $out) {
+			global $wpdb;
+			$table_name = $wpdb->prefix . "mendeleycache";
+			$dbdoc = $wpdb->get_row("SELECT * FROM $table_name WHERE type=10 AND mid='$cid'");
+			if ($dbdoc) {
+				$wpdb->update($table_name, array('time' => time(), 'content' => json_encode($out)), array( 'type' => '10', 'mid' => "$cid"));
+				return;
+			}
+			$wpdb->insert($table_name, array( 'type' => '10', 'time' => time(), 'mid' => "$cid", 'content' => json_encode($out)));
+		}
 
 		function getOptions() {
 			if ($this->settings != null)
@@ -635,6 +671,7 @@ if (!class_exists("MendeleyPlugin")) {
 				'debug' => 'false',
 				'cache_collections' => 'week',
 				'cache_docs' => 'week',
+				'cache_output' => 'day',
 				'consumer_key' => '',
 				'consumer_secret' => '',
 				'req_token' => '',
@@ -712,6 +749,9 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 				if (isset($_POST['cacheDocs'])) {
 					$this->settings['cache_docs'] = $_POST['cacheDocs'];
+				}
+				if (isset($_POST['cacheOutput'])) {
+					$this->settings['cache_output'] = $_POST['cacheOutput'];
 				}
 				if (isset($_POST['consumerKey'])) {
 					$this->settings['consumer_key'] = $_POST['consumerKey'];
@@ -824,6 +864,13 @@ Cache folder/group requests
       <option value="week" id="day" <?php if ($this->settings['cache_docs'] === "week") { echo(' selected="selected"'); }?>>refresh weekly</option>
       <option value="day" id="day" <?php if ($this->settings['cache_docs'] === "day") { echo(' selected="selected"'); }?>>refresh daily</option>
       <option value="hour" id="hour" <?php if ($this->settings['cache_docs'] === "hour") { echo(' selected="selected"'); }?>>refresh hourly</option>
+    </select><br/>
+ Cache formated output
+    <select name="cacheOutput" size="1">
+      <option value="no" id="no" <?php if ($this->settings['cache_output'] === "no") { echo(' selected="selected"'); }?>>no caching</option>
+      <option value="week" id="week" <?php if ($this->settings['cache_output'] === "week") { echo(' selected="selected"'); }?>>refresh weekly</option>
+      <option value="day" id="day" <?php if ($this->settings['cache_output'] === "day") { echo(' selected="selected"'); }?>>refresh daily</option>
+      <option value="hour" id="hour" <?php if ($this->settings['cache_output'] === "hour") { echo(' selected="selected"'); }?>>refresh hourly</option>
     </select><br/>
 </p>
 

@@ -3,7 +3,7 @@ Contributors: kochm
 Donate link: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
 Tags: bibliography, mendeley
 Requires at least: 2.8
-Tested up to: 3.1.1
+Tested up to: 3.3.1
 Stable tag: trunk
 
 Mendeley Plugin for WordPress is a plugin for displaying information from the Mendeley "shared bibliography system" in WordPress blogs.
@@ -24,7 +24,7 @@ The lists can be included in posts or pages using WordPress shortcodes:
 &#91;mendeley type="documents" id="authored" groupby="year"&#93;
 &#91;mendeley type="documents" id="authored" filter="tag=perceptualorganization"&#93;
 &#91;mendeley type="documents" id="authored" sortby="authors" sortbyorder="asc" groupby="year" grouporder="desc"%#93;
-&#91;mendeley type="own" id="0"%#93;
+&#91;mendeley type="own"%#93;
 
 - the attribute "type" can be set to "own", "folders", "groups", "documents"
 - the attribute "groupby" is optional; possible values currently are: "authors", "year"
@@ -166,6 +166,9 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 0.7.3 =
+* added output caching
 
 = 0.7.2 =
 * added possibility to display own publications (type = 'own')
