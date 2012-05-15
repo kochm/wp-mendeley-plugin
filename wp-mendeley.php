@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.7.3
+Version: 0.7.4
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -624,7 +624,7 @@ if (!class_exists("MendeleyPlugin")) {
 				if ($this->settings['cache_output'] === "day") { $delta = 86400; }
 				if ($this->settings['cache_output'] === "week") { $delta = 604800; }
 				if ($dbdoc->time + $delta > time()) {
-					return json_decode($dbdoc->content);
+					return $dbdoc->content;
 				}
 			}
 			return NULL;
@@ -658,10 +658,10 @@ if (!class_exists("MendeleyPlugin")) {
 			$table_name = $wpdb->prefix . "mendeleycache";
 			$dbdoc = $wpdb->get_row("SELECT * FROM $table_name WHERE type=10 AND mid='$cid'");
 			if ($dbdoc) {
-				$wpdb->update($table_name, array('time' => time(), 'content' => json_encode($out)), array( 'type' => '10', 'mid' => "$cid"));
+				$wpdb->update($table_name, array('time' => time(), 'content' => $out), array( 'type' => '10', 'mid' => "$cid"));
 				return;
 			}
-			$wpdb->insert($table_name, array( 'type' => '10', 'time' => time(), 'mid' => "$cid", 'content' => json_encode($out)));
+			$wpdb->insert($table_name, array( 'type' => '10', 'time' => time(), 'mid' => "$cid", 'content' => $out));
 		}
 
 		function getOptions() {

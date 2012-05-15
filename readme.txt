@@ -167,6 +167,9 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 
 == Change log ==
 
+= 0.7.4 =
+* corrected bug with output caching
+
 = 0.7.3 =
 * added output caching
 
