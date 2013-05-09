@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.7.5
+Version: 0.7.6
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -540,9 +540,9 @@ if (!class_exists("MendeleyPlugin")) {
 			/*
 			if (isset($doc->publisher)) {
 				if (isset($doc->city)) {
-					$tmps .= ', <span class="wpmpublisher">' . addslashes($doc->city) . ': ' . addslashes($doc->publisher) . '</span>';
+					$tmps .= ', <span class="wpmpublisher">' . json_encode($doc->city) . ': ' . json_encode($doc->publisher) . '</span>';
 				} else {
-					$tmps .= ', <span class="wpmpublisher">' . addslashes($doc->publisher) . '</span>';
+					$tmps .= ', <span class="wpmpublisher">' . json_encode($doc->publisher) . '</span>';
 				}
 			}
 			*/

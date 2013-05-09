@@ -167,6 +167,9 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 
 == Change log ==
 
+= 0.7.6 =
+* corrected problem with incorrect JSON encoding (replaced calls to addslashes() with calls to json_encode())
+
 = 0.7.5 =
 * if no url is defined, but a doi is defined, a dx.doi.org/... url is set
 * corrected bug when sorting lists by author
