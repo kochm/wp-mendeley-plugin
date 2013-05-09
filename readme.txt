@@ -3,7 +3,7 @@ Contributors: kochm
 Donate link: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
 Tags: bibliography, mendeley
 Requires at least: 2.8
-Tested up to: 3.3.1
+Tested up to: 3.1.1
 Stable tag: trunk
 
 Mendeley Plugin for WordPress is a plugin for displaying information from the Mendeley "shared bibliography system" in WordPress blogs.
@@ -24,9 +24,8 @@ The lists can be included in posts or pages using WordPress shortcodes:
 &#91;mendeley type="documents" id="authored" groupby="year"&#93;
 &#91;mendeley type="documents" id="authored" filter="tag=perceptualorganization"&#93;
 &#91;mendeley type="documents" id="authored" sortby="authors" sortbyorder="asc" groupby="year" grouporder="desc"%#93;
-&#91;mendeley type="own"%#93;
 
-- the attribute "type" can be set to "own", "folders", "groups", "documents"
+- the attribute "type" can be set to "folders", "groups", "documents"
 - the attribute "groupby" is optional; possible values currently are: "authors", "year"
 - the attribute "sortby" is optional; possible values currently are: "authors", "year"
 - the attributes "sortbyorder" and "groupbyorder" can have the values "asc" and "desc"
@@ -116,21 +115,7 @@ and authorize the API. To do so the following steps have to be taken:
 <li> then you are redirected to the Mendeley web site to authorize the request, and redirected back to the blog
 <li> now you can use shortcodes in your pages and blogs
 </ol> 
-
-<h3>JSON data source</h3>
-
-In version 0.7 we added the functionality to create a JSON data source - e.g. to be used as data source in Exhibit/Simile application.
-
-For example the page http://www.kooperationssysteme.de/pub/cscm/ uses such a data source in an interactive JavaScript application to search the references.
-
-The following line is used in the Exhibit/Simile application:
-
-<link href="/index.php?mendeley_action=export-json&id=763&type=groups" type="application/json" rel="exhibit/data" />
  
-In the directory examples you find a file bibexhibit.tpl.php that can be placed in your Wordpress theme directory. Then you can create a new page with the Template BibExhibit that will show the application with the data source.
-
-<h3>Thanks ...</h3>
-
 Thanks for contributions to Rhodri Cusack and Matthias Budde.
 
 == Installation ==
@@ -147,45 +132,20 @@ Thanks for contributions to Rhodri Cusack and Matthias Budde.
 
 <p>There are some reported problems with other plugins that are using the OAuth PHP library like tweetblender: If the other plugin does not check if the library is already loaded (as ours does), initializing the other plugins after wp_mendeley will result in an error message. In this case deactivate the other plugin.</p>
 
-<p>Tutorials / descriptions contributed by others:
-<ul>
-<li><a href="http://tramullas.com/2012/02/23/integrando-mendeley-en-wordpress-2/">Spanish tutorial about installing and using the plugin (v0.7)</a> by Jesús Tramullas</li>
-</ul>
-</p>
-
 == Upgrade Notice ==
 
 To upgrade the plugin, just deactivate the plugin, overwrite the plugin directory, and reactivate it - or use the automatic upgrade mechanism in WordPress.
 
 == Frequently Asked Questions ==
 
-How can I contribute to the development of the plugin?
-
-The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin/ - You may check out the newest code from there - and ask for being added as a developer to the repository to upload bug fixes and other additions.
+No FAQ now.
 
 == Screenshots ==
 
 == Change log ==
 
-= 0.7.4 =
-* corrected bug with output caching
-
-= 0.7.3 =
-* added output caching
-
-= 0.7.2 =
-* added possibility to display own publications (type = 'own')
-* added widget for displaying own publications
-
-= 0.7.1 =
-* added link to spanisch tutorial
-* bug fix in widgets: missing declaration ob global variable $mendeleyPlugin
-
-= 0.7 =
-* added support for creating JSON files with references on demand - e.g. to be used as a data source for Simile/Exhibit
-
 = 0.6.7 =
-* some bug fixes / additional handling regarding the new author data format
+* if no url is defined, but a doi is defined, a dx.doi.org/... url is set
 
 = 0.6.6 =
 * adapted author handling to new way (forename, surname)
