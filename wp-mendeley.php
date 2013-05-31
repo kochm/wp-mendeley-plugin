@@ -2,13 +2,16 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.7.6
+Version: 0.7.8
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
 License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
+
+define( 'PLUGIN_VERSION' , '0.7.8' );
+define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
 The MIT License
@@ -42,9 +45,6 @@ define( 'REQUEST_TOKEN_ENDPOINT', 'http://www.mendeley.com/oauth/request_token/'
 define( 'ACCESS_TOKEN_ENDPOINT', 'http://www.mendeley.com/oauth/access_token/' );
 define( 'AUTHORIZE_ENDPOINT', 'http://www.mendeley.com/oauth/authorize/' );
 define( 'MENDELEY_OAPI_URL', 'http://api.mendeley.com/oapi/' );
-
-define( 'PLUGIN_VERSION' , '0.7' );
-define( 'PLUGIN_DB_VERSION', 1 );
 
 // JSON services for PHP4
 if (!function_exists('json_encode')) {
@@ -352,10 +352,19 @@ if (!class_exists("MendeleyPlugin")) {
 					$grpval = $doc->$groupby;
 					// If array (like authors, take the first one)
 					if (is_array($grpval)) {
-						$grpval = $grpval[0]->surname . $grpval[0]->forename;
+						if (is_object($grpval[0])) {
+							if (isset($grpval[0]->surname)) {
+								$grpval = $grpval[0]->surname . $grpval[0]->forename;
+							} else {
+								$grpval = strval($grpval[0]);
+							}
+						} else {
+							$grpval = strval($grpval[0]);
+						}
 					}
 				}
 				if (isset($grpval)) {
+					$grpval = $grpval . $doc->added;
 					$grpvalues[$grpval][] = $doc;
 				}
 			}
@@ -564,21 +573,33 @@ if (!class_exists("MendeleyPlugin")) {
 		function initializeDatabase() {
 			global $wpdb;
 			$table_name = $wpdb->prefix . "mendeleycache";
-			// check for table: if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) 
-			// if ($this->settings['db_version'] < PLUGIN_DB_VERSION) {
-			if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
-				$sql = "CREATE TABLE " . $table_name . " (
+			if ($this->settings['db_version'] < PLUGIN_DB_VERSION) {
+				if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+					$sql = "CREATE TABLE " . $table_name . " (
 						  id mediumint(9) NOT NULL AUTO_INCREMENT,
 						  type mediumint(9) NOT NULL,
 						  mid tinytext NOT NULL,
 						  content text,
 						  time bigint(11) DEFAULT '0' NOT NULL,
 						  UNIQUE KEY id (id)
-						);";
-				require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-				dbDelta($sql);
-				$this->settings['db_version'] = PLUGIN_DB_VERSION;
-				update_option($this->adminOptionsName, $this->settings);
+						);".
+						"CREATE INDEX wpmidxid ON $table_name (mid);".
+						"CREATE INDEX wpmidxtype ON $table_name (type);";
+					require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+					dbDelta($sql);
+					$this->settings['db_version'] = PLUGIN_DB_VERSION;
+					update_option($this->adminOptionsName, $this->settings);
+				} else {
+					if ($this->settings['db_version'] < 2) {
+						// create index
+						$sql = "CREATE INDEX wpmidxid ON $table_name (mid);".
+							"CREATE INDEX wpmidxtype ON $table_name (type);";
+						require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+						dbDelta($sql);
+					}
+					$this->settings['db_version'] = PLUGIN_DB_VERSION;
+					update_option($this->adminOptionsName, $this->settings);
+				}
 			}
 		}
 		/* check cache database */
@@ -839,9 +860,9 @@ if (!class_exists("MendeleyPlugin")) {
 <form method="post" action="<?php echo $_SERVER["REQUEST_URI"]; ?>">
 <h1>Mendeley Plugin</h1>
 
-This plugin offers the possibility to load lists of document references from Mendeley (shared) collections or groups, and display them in WordPress posts or pages.
+<p>This plugin offers the possibility to load lists of document references from Mendeley (shared) collections or groups, and display them in WordPress posts or pages.</p>
 
-The lists can be included in posts or pages using WordPress shortcodes:
+<p>The lists can be included in posts or pages using WordPress shortcodes:</p>
 
 <p><ul>
 <li>- [mendeley type="folders" id="xxx" groupby=""], groupby=year,authors; sortby; sortorder
@@ -884,6 +905,8 @@ Cache folder/group requests
 <p>To turn on caching is important, because Mendeley currently imposes a rate limit to requests to the service (currently 150 requests per hour - and we need one request for every single document details). See <a href="http://dev.mendeley.com/docs/rate-limiting">http://dev.mendeley.com/docs/rate-limiting</a> for more details on this restriction.</p>
 
 <h4>Debug</h4>
+
+<p>Current Plugin Version: <?php echo PLUGIN_VERSION; ?>, Current Database Version: <?php echo PLUGIN_DB_VERSION; ?></p>
 
 <p><input type="radio" id="debug_yes" name="debug" value="true" <?php if ($this->settings['debug'] === "true") { _e(' checked="checked"', "MendeleyPlugin"); }?> /> Yes&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" id="debug_no" name="debug" value="false" <?php if ($this->settings['debug'] === "false") { _e(' checked="checked"', "MendeleyPlugin"); }?>/> No</p>
  

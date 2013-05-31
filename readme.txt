@@ -167,6 +167,13 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 
 == Change log ==
 
+= 0.7.8 =
+* initializeDatabase only checks for existence of table if db_version is wrong
+* added index in database to optimize queries
+
+= 0.7.7 =
+* sorting by year or other attributes now does sub-sorting by add-date, so the order might be correct in the years
+
 = 0.7.6 =
 * corrected problem with incorrect JSON encoding (replaced calls to addslashes() with calls to json_encode())
 
