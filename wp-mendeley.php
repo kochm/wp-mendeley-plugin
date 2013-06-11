@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.7.8
+Version: 0.8
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '0.7.8' );
+define( 'PLUGIN_VERSION' , '0.8' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -57,6 +57,11 @@ if (!function_exists('json_encode')) {
 		return $GLOBALS['JSON_OBJECT']->decode($value);
 	}
 }
+
+if (!class_exists("citeproc")){
+	include_once('CiteProc.php');
+}
+
 
 if (!class_exists("MendeleyPlugin")) {
 	class MendeleyPlugin {
@@ -134,7 +139,8 @@ if (!class_exists("MendeleyPlugin")) {
 					$sortby = "year";
 				}
 			}
-			$filter = $attrs['filter'];
+			$csl = (isset($attrs['csl'])?$attrs['csl']:Null) ;
+			$filter = (isset($attrs['filter'])?$attrs['filter']:array()) ;
 			$filterattr = NULL;
 			$filterval = NULL;
 			if (isset($filter)) {
@@ -161,6 +167,9 @@ if (!class_exists("MendeleyPlugin")) {
 
 			// output caching
 			$cacheid = $type."-".$id."-".$groupby.$grouporder."-".$sortby.$sortorder."-".$filterattr.$filterval."-".$maxdocs;
+			if (isset($csl)) {
+				$cacheid .= "-".$csl;
+			}
 			$cacheresult = $this->getOutputFromCache($cacheid);
 			if (!empty($cacheresult)) {
 				return $result.$cacheresult;
@@ -202,11 +211,12 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 
 				// currently, there are two styles, one for widgets ("shortlist") and the
-				// standard one ("standard") 				
+				// standard one ("standard") - the latter allows the optional attribute "csl"
 				if ($style === "shortlist") {
 					$result .= '<li class="wpmlistref">' . $this->formatDocumentShort($doc) .  '</li>';
 				} else {
-					$result = $result . '<p class="wpmref">' . $this->formatDocument($doc) . '</p>';
+					// do static formatting or formatting with CSL stylesheet
+					$result = $result . $this->formatDocument($doc,$csl);
 				}
 
 				if ($maxdocs > 0) {
@@ -386,6 +396,8 @@ if (!class_exists("MendeleyPlugin")) {
 		}
 		
 		/* produce the output for one document */
+		/* - csl is an optional URL pointing to a Citation Stylesheet Language stylesheet
+		   - textonly = True will result in output without HTML formatting */
 		/* the following attributes are available in the doc object
 			type (Book Section, Conference Proceedings, Journal Article, Report, Book, Encyclopedia Article, ...)
 			title
@@ -412,80 +424,206 @@ if (!class_exists("MendeleyPlugin")) {
 			canonical_id
 			files
 		*/
-		function formatDocument($doc) {
-			$author_arr = $doc->authors;
-			$authors = "";
-			if (is_array($author_arr)) {
-				$authors = $this->comma_separated_names($author_arr);
+		function formatDocument($doc, $csl=Null, $textonly=False) {
+			$result = '';
+			if (!$textonly) {
+                        	$result .= '<p class="wpmref" style="';
 			}
-			$editor_arr = $doc->editors;
-			$editors = "";
-			if (is_array($editor_arr)) {
-				$editors = $this->comma_separated_names($editor_arr);
-			}
-			if (strlen($authors)<1) {
-				if (strlen($editors)>0) {
-					$authors = $editors . " (ed.)";
-					$editors = "";
+
+                        // format document with a given CSL style and the CiteProc.php
+                        if ($csl != Null && class_exists("citeproc")){
+                        	// read the given CSL style from XML document, load it to a string, and convert it to an object
+				$cacheid = "csl-".$csl;
+				$csl_file = $this->getOutputFromCache($cacheid);
+				if (empty($csl_file)) {
+                        		$csl_file = file_get_contents($csl);
+					$this->updateOutputInCache($cacheid, $csl_file);
 				}
-			}
-			$tmps = '<span class="wpmauthors">' . $authors . '</span> ' .
-			        '<span class="wpmyear">(' . $doc->year . ')</span> ' . 
-			        '<span class="wpmtitle">' . $doc->title . '</span>';
-			if (isset($doc->publication_outlet)) {
-				$tmps .= ', <span class="wpmoutlet">' . 
-				    $doc->publication_outlet . '</span>';
-			}
-			if (isset($doc->volume)) {
-				$tmps .= ' <span class="wpmvolume">' . $doc->volume . '</span>';
-			}
-			if (isset($doc->issue)) {
-				$tmps .= '<span class="wpmissue">(' . $doc->issue . ')</span>';
-			}
-			if (isset($doc->editors)) {
-				if (strlen($editors)>0) {
-					$tmps .= ', <span class="wpmeditors">' . $editors . ' (' . __('ed.','wp-mendeley') . ')</span>';
-				}
-			}
-			if (isset($doc->pages)) {
-				$tmps .= ', <span class="wpmpages">' . __('p.','wp-mendeley') . ' ' . $doc->pages . '</span>';
-			}
-			if (isset($doc->publisher)) {
-				if (isset($doc->city)) {
-					$tmps .= ', <span class="wpmpublisher">' . $doc->city . ': ' . $doc->publisher . '</span>';
-				} else {
-					$tmps .= ', <span class="wpmpublisher">' . $doc->publisher . '</span>';
-				}
-			}
-			if (isset($doc->url)) {
-				$item=0;
-				foreach(explode(chr(10),$doc->url) as $urlitem) {
-					// determine the text for the anchor
-					$atext = "url";
-					if (strpos($urlitem, "www.pubmedcentral.nih.gov", false)) { $atext = "pubmed central"; }
-					if (strpos($urlitem, "ncbi.nlm.nih.gov/pubmed", false)) { $atext = "pubmed"; }
-					// TBD: add support to use icons instead of text
-					// TBD: add support to further configure output
-					if (endsWith($urlitem, "pdf", false)) { $atext = "pdf"; }
-					if (endsWith($urlitem, "ps", false)) { $atext = "ps"; }
-					if (endsWith($urlitem, "zip", false)) { $atext = "zip"; }
-					if (startsWith($urlitem, "http://www.youtube", false)) { $atext = "watch on youtube"; }
-					if (startsWith($urlitem, "http://www.scribd.com", false)) { $atext = "scribd"; }
-					$tmps .= ', <span class="wpmurl"><a target="_blank" href="' . $urlitem . '"><span class="wpmurl' . $atext . '">' . $atext . '</span></a></span>';
-					$item += 1;
-				}
-			} else {
-				if (isset($doc->doi)) {
-                                	$atext = "doi:" . $doc->doi;
-                                	$tmps .= ', <span class="wpmurl"><a target="_blank" href="http://dx.doi.org/' . $doc->doi . '"><span class="wpmurl' . $atext . '">' . $atext . '</span></a></span>';
-                                	$item += 1;
+                        	$csl_object = simplexml_load_string($csl_file);
+
+                                if (!$textonly) { $result.='">'; }
+                                // stdClass for showing document
+                                $docdata = new stdClass;
+                                $docdata->type = $this->mendeleyType2CiteProcType($doc->type);
+                                $docdata->author = $this->mendeleyNames2CiteProcNames($doc->authors);
+                                $docdata->editor = $this->mendeleyNames2CiteProcNames($doc->editors);
+				$docdata->issued = (object) array('date-parts' => array(array($doc->year)));
+                                $docdata->title = $doc->title;
+                                if (isset($doc->published_in)) {
+                                        $docdata->container_title = $doc->published_in;
                                 }
+                                if (isset($doc->publication_outlet)) {
+                                        $docdata->container_title = $doc->publication_outlet;
+                                }
+                                if (isset($doc->journal)) {
+                                        $docdata->container_title = $doc->journal;
+                                }
+                                if (isset($doc->volume)) {
+                                        $docdata->volume = $doc->volume;
+                                }
+                                if (isset($doc->issue)) {
+                                        $docdata->issue = $doc->issue;
+                                }
+                                if (isset($doc->pages)) {
+                                        $docdata->page = $doc->pages;
+                                }
+                                if (isset($doc->publisher)) {
+                                        $docdata->publisher = $doc->publisher;
+                                }
+                                if (isset($doc->city)) {
+                                        $docdata->publisher_place = $doc->city;
+				}
+                                if (isset($doc->url)) {
+                                        $docdata->URL = $doc->url;
+				}
+                                if (isset($doc->doi)) {
+                                        $docdata->DOI = $doc->doi;
+				}
+                                if (isset($doc->isbn)) {
+                                        $docdata->ISBN = $doc->isbn;
+				}
+                                // execute citeproc with new stdClass
+                                $cp = new citeproc($csl_file);
+                                $result .= $cp->render($docdata,'bibliography');
 			}
-			return $tmps;
+                        else {
+                                if (!$textonly) { $result.='">'; }
+				$author_arr = $doc->authors;
+				$authors = "";
+				if (is_array($author_arr)) {
+					$authors = $this->comma_separated_names($author_arr);
+				}
+				$editor_arr = $doc->editors;
+				$editors = "";
+				if (is_array($editor_arr)) {
+					$editors = $this->comma_separated_names($editor_arr);
+				}
+				if (strlen($authors)<1) {
+					if (strlen($editors)>0) {
+						$authors = $editors . " (ed.)";
+						$editors = "";
+					}
+				}
+				if ($textonly) {
+				$result .= $authors . ' (' . $doc->year . '): ' . $doc->title;
+				if (isset($doc->publication_outlet)) {
+					$result .= ', ' . $doc->publication_outlet;
+				}
+				if (isset($doc->volume)) {
+					$result .= ' ' . $doc->volume;
+				}
+				if (isset($doc->issue)) {
+					$result .= '(' . $doc->issue . ')';
+				}
+				if (isset($doc->editors)) {
+					if (strlen($editors)>0) {
+						$result .= ', ' . $editors . ' (' . __('ed.','wp-mendeley') . ')';
+					}
+				}
+				if (isset($doc->pages)) {
+					$result .= ', ' . __('p.','wp-mendeley') . ' ' . $doc->pages;
+				}
+				if (isset($doc->publisher)) {
+					if (isset($doc->city)) {
+						$result .= ', ' . $doc->city . ': ' . $doc->publisher;
+					} else {
+						$result .= ', ' . $doc->publisher;
+					}
+				}
+				if (isset($doc->url)) {
+					foreach(explode(chr(10),$doc->url) as $urlitem) {
+						$result .= ', '.$urlitem;
+					}
+				} 
+				if (isset($doc->doi)) {
+                                	$result .= ', doi:' . $doc->doi;
+				}
+				} else {
+				$result .= '<span class="wpmauthors">' . $authors . '</span> ' .
+			        	'<span class="wpmyear">(' . $doc->year . ')</span> ' . 
+			        	'<span class="wpmtitle">' . $doc->title . '</span>';
+				if (isset($doc->publication_outlet)) {
+					$result .= ', <span class="wpmoutlet">' . 
+				    	$doc->publication_outlet . '</span>';
+				}
+				if (isset($doc->volume)) {
+					$result .= ' <span class="wpmvolume">' . $doc->volume . '</span>';
+				}
+				if (isset($doc->issue)) {
+					$result .= '<span class="wpmissue">(' . $doc->issue . ')</span>';
+				}
+				if (isset($doc->editors)) {
+					if (strlen($editors)>0) {
+						$result .= ', <span class="wpmeditors">' . $editors . ' (' . __('ed.','wp-mendeley') . ')</span>';
+					}
+				}
+				if (isset($doc->pages)) {
+					$result .= ', <span class="wpmpages">' . __('p.','wp-mendeley') . ' ' . $doc->pages . '</span>';
+				}
+				if (isset($doc->publisher)) {
+					if (isset($doc->city)) {
+						$result .= ', <span class="wpmpublisher">' . $doc->city . ': ' . $doc->publisher . '</span>';
+					} else {
+						$result .= ', <span class="wpmpublisher">' . $doc->publisher . '</span>';
+					}
+				}
+				if (isset($doc->url)) {
+					foreach(explode(chr(10),$doc->url) as $urlitem) {
+						// determine the text for the anchor
+						$atext = "url";
+						if (strpos($urlitem, "www.pubmedcentral.nih.gov", false)) { $atext = "pubmed central"; }
+						if (strpos($urlitem, "ncbi.nlm.nih.gov/pubmed", false)) { $atext = "pubmed"; }
+						// TBD: add support to use icons instead of text
+						// TBD: add support to further configure output
+						if (endsWith($urlitem, "pdf", false)) { $atext = "pdf"; }
+						if (endsWith($urlitem, "ps", false)) { $atext = "ps"; }
+						if (endsWith($urlitem, "zip", false)) { $atext = "zip"; }
+						if (startsWith($urlitem, "http://www.youtube", false)) { $atext = "watch on youtube"; }
+						if (startsWith($urlitem, "http://www.scribd.com", false)) { $atext = "scribd"; }
+						$result .= ', <span class="wpmurl"><a target="_blank" href="' . $urlitem . '"><span class="wpmurl' . $atext . '">' . $atext . '</span></a></span>';
+					}
+				} else {
+					if (isset($doc->doi)) {
+                                		$atext = "doi:" . $doc->doi;
+                                		$result .= ', <span class="wpmurl"><a target="_blank" href="http://dx.doi.org/' . $doc->doi . '"><span class="wpmurl' . $atext . '">' . $atext . '</span></a></span>';
+                                	}
+				}
+				}
+			}
+			if (!$textonly) { $result .= '</p>'; }
+			return $result;
+		}
+
+		function &mendeleyNames2CiteProcNames($names) {
+			foreach ($names as $rank => $name) {
+				$name->given = $name->forename;
+				$name->family = $name->surname;
+			}
+			return $names;
+		}
+		function mendeleyType2CiteProcType($type) {
+			if (!isset($this->type_map)) {
+				$this->type_map = array(
+						'Book' => 'book',
+						'Book Section' => 'chapter',
+						'Journal Article' => 'article',
+						'Magazine Article' => 'article',
+						'Newspaper Article' => 'article',
+						'Conference Proceedings' => 'paper-conference',
+						'Report' => 'report',
+						'Thesis' => 'thesis',
+						'Case' => 'legal_case',
+						'Encyclopedia Article' => 'entry-encyclopedia',
+						'Web Page' => 'webpage',
+						'Working Paper' => 'report',
+						'Generic' => 'chapter', 
+						);
+			}
+			return $this->type_map[$type];
 		}
 		
-		function formatDocumentShort($doc) {
-			$tmps = '<span class="wpmtitle">';
+		function formatDocumentShort($doc,$csl=Null) {
+			$tmps = '<span class="wpmtitle" title="'.$this->formatDocument($doc,$csl,True).'">';
 			if (isset($doc->url)) {
 				$tmps .= '<a href="' .  $doc->url . '">' . $doc->title . '</a>';
 			} else {
@@ -660,23 +798,31 @@ if (!class_exists("MendeleyPlugin")) {
 		/* add data to database */
 		function updateDocumentInCache($docid, $doc) {
 			global $wpdb;
+			$jsondoc = json_encode($doc);
+			if (!strncmp($jsondoc, "{\"error", 7)) {
+				return;
+			}
 			$table_name = $wpdb->prefix . "mendeleycache";
 			$dbdoc = $wpdb->get_row("SELECT * FROM $table_name WHERE type=0 AND mid='$docid'");
 			if ($dbdoc) {
-				$wpdb->update($table_name, array('time' => time(), 'content' => json_encode($doc)), array( 'type' => '0', 'mid' => "$docid"));
+				$wpdb->update($table_name, array('time' => time(), 'content' => $jsondoc), array( 'type' => '0', 'mid' => "$docid"));
 				return;
 			}
-			$wpdb->insert($table_name, array( 'type' => '0', 'time' => time(), 'mid' => "$docid", 'content' => json_encode($doc)));
+			$wpdb->insert($table_name, array( 'type' => '0', 'time' => time(), 'mid' => "$docid", 'content' => $jsondoc));
 		}
 		function updateFolderInCache($cid, $doc) {
 			global $wpdb;
+			$jsondoc = json_encode($doc);
+			if (!strncmp($jsondoc, "{\"error", 7)) {
+				return;
+			}
 			$table_name = $wpdb->prefix . "mendeleycache";
 			$dbdoc = $wpdb->get_row("SELECT * FROM $table_name WHERE type=1 AND mid='$cid'");
 			if ($dbdoc) {
-				$wpdb->update($table_name, array('time' => time(), 'content' => json_encode($doc)), array( 'type' => '1', 'mid' => "$cid"));
+				$wpdb->update($table_name, array('time' => time(), 'content' => $jsondoc), array( 'type' => '1', 'mid' => "$cid"));
 				return;
 			}
-			$wpdb->insert($table_name, array( 'type' => '1', 'time' => time(), 'mid' => "$cid", 'content' => json_encode($doc)));
+			$wpdb->insert($table_name, array( 'type' => '1', 'time' => time(), 'mid' => "$cid", 'content' => $jsondoc));
 		}
 		function updateCollectionInCache($cid, $doc) {
 			return $this->updateFolderInCache($cid, $doc);
@@ -862,6 +1008,9 @@ if (!class_exists("MendeleyPlugin")) {
 
 <p>This plugin offers the possibility to load lists of document references from Mendeley (shared) collections or groups, and display them in WordPress posts or pages.</p>
 
+<p>The "csl" attribute in the shortcode offers the possibility for customized style formatting using the citation style language (CSL). </br>
+For further information a short example is given in the readme.txt or visit the CSL website on <a href="http://citationstyles.org/" target="_blank" alt="citationstyles.org">citationstyles.org</a>.</p>
+
 <p>The lists can be included in posts or pages using WordPress shortcodes:</p>
 
 <p><ul>
@@ -871,6 +1020,7 @@ if (!class_exists("MendeleyPlugin")) {
 <li>- [mendeley type="documents" id="authored" groupby="year"]
 <li>- [mendeley type="documents" id="123456789"]
 <li>- [mendeley type="own"]
+<li>- [mendeley type="groups" id="763" csl="http://DOMAINNAME/csl/csl_style.csl"]
 <li>- ... (see readme.txt for more examples)
 </ul></p>
 
@@ -1134,6 +1284,7 @@ class MendeleyCollectionWidget extends WP_Widget {
         $maxdocs = apply_filters('widget_cid', $instance['count']);
         $filterattr = apply_filters('widget_cid', $instance['filterattr']);
         $filterval = apply_filters('widget_cid', $instance['filterval']);
+	$csl = apply_filters('widget_cid', $instance['csl']);
         ?>
               <?php echo $before_widget; ?>
                   <?php if ( $title )
@@ -1143,7 +1294,7 @@ class MendeleyCollectionWidget extends WP_Widget {
 			if (strlen($filterattr)<1) {
 				$result .= $mendeleyPlugin->formatWidget($ctype, $cid, $maxdocs);
 			} else {
-				$result .= $mendeleyPlugin->formatWidget($ctype, $cid, $maxdocs, array($filterattr => $filterval));
+				$result .= $mendeleyPlugin->formatWidget($ctype, $cid, $maxdocs, array($filterattr => $filterval, 'csl' => $csl));
 			}
 			$result .= '</ul>';
 			echo $result;
@@ -1161,6 +1312,7 @@ class MendeleyCollectionWidget extends WP_Widget {
 	$instance['count'] = strip_tags($new_instance['count']);
 	$instance['filterattr'] = strip_tags($new_instance['filterattr']);
 	$instance['filterval'] = strip_tags($new_instance['filterval']);
+	$instance['csl'] = strip_tags($new_instance['csl']);
         return $instance;
     }
 
@@ -1172,6 +1324,7 @@ class MendeleyCollectionWidget extends WP_Widget {
         $count = esc_attr($instance['count']);
         $filterattr = esc_attr($instance['filterattr']);
         $filterval = esc_attr($instance['filterval']);
+	$csl = esc_attr($instance['csl']);
         ?>
         <p><label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo $title; ?>" /></label></p>
         <p><label for="<?php echo $this->get_field_id('ctype'); ?>"><?php _e('Collection Type:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('ctype'); ?>" name="<?php echo $this->get_field_name('ctype'); ?>" type="text" value="<?php echo $ctype; ?>" /></label> (folder, group, documents)</p>
@@ -1179,6 +1332,7 @@ class MendeleyCollectionWidget extends WP_Widget {
  		<p><label for="<?php echo $this->get_field_id('count'); ?>"><?php _e('Number of docs to display:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('count'); ?>" name="<?php echo $this->get_field_name('count'); ?>" type="text" value="<?php echo $count; ?>" /></label></p>
  		<p><label for="<?php echo $this->get_field_id('filterattr'); ?>"><?php _e('Attribute name to filter for:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('filterattr'); ?>" name="<?php echo $this->get_field_name('filterattr'); ?>" type="text" value="<?php echo $filterattr; ?>" /></label></p>
  		<p><label for="<?php echo $this->get_field_id('filterval'); ?>"><?php _e('Attribute value:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('filterval'); ?>" name="<?php echo $this->get_field_name('filterval'); ?>" type="text" value="<?php echo $filterval; ?>" /></label></p>
+		<p><label for="<?php echo $this->get_field_id('csl'); ?>"><?php _e('Attribute value:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('csl'); ?>" name="<?php echo $this->get_field_name('csl'); ?>" type="text" value="<?php echo $csl; ?>" /></label></p>
         <?php 
     }
 

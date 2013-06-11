@@ -25,6 +25,7 @@ The lists can be included in posts or pages using WordPress shortcodes:
 &#91;mendeley type="documents" id="authored" filter="tag=perceptualorganization"&#93;
 &#91;mendeley type="documents" id="authored" sortby="authors" sortbyorder="asc" groupby="year" grouporder="desc"%#93;
 &#91;mendeley type="own"%#93;
+&#91;mendeley type="groups" id="xxx" groupby="xxx" csl="http://DOMAINNAME/csl/custom_style.csl"&#93;
 
 - the attribute "type" can be set to "own", "folders", "groups", "documents"
 - the attribute "groupby" is optional; possible values currently are: "authors", "year"
@@ -32,11 +33,10 @@ The lists can be included in posts or pages using WordPress shortcodes:
 - the attributes "sortbyorder" and "groupbyorder" can have the values "asc" and "desc"
 - sorting on the sort key is done before grouping on the group key if both are provided
 - possible attributes to filter for are: author, editor, title, year, tag, keyword, url, publication_outlet, pages, issue, volume, city, publisher, abstract
+- the attribute "csl" is optional; the value must contain a valid URL with a .csl file
 </pre>
 
-Additionally, there are widgets to display the content of collections or shared collections in widget areas of a theme.
-
-The entries are formatted the following way - so, the style can be tailored using CSS. 
+If you do not specify a CSL stylesheet, full entries are formatted the following way - so, the style can be tailored using CSS. 
 <pre>
     &lt;h2 class="wpmgrouptitle"&gt;grouptitle&lt;/h2&gt;
 	&lt;p class="wpmref"&gt;
@@ -87,6 +87,7 @@ color: #336633;
 }
 </pre>
 
+Additionally, there are widgets to display the content of collections or shared collections in widget areas of a theme (list of titles with links only).
 The output in the widgets is formatted the following way:
 <pre>
     &lt;ul class="wpmlist"&gt;
@@ -97,7 +98,9 @@ The output in the widgets is formatted the following way:
 	&lt;/ul&gt;
 </pre>
 
-One of the next versions of the plugin will support a CSL (citation style language) based formatting.
+The title will additionally be equipped with a div-tag including the full reference in the 
+title attribute - which will in most browsers display the full reference when you are
+hoovering over the title with the mouse pointer.
 
 You can use the plugin in non widgetized themes, just try
 <pre>
@@ -129,9 +132,34 @@ The following line is used in the Exhibit/Simile application:
  
 In the directory examples you find a file bibexhibit.tpl.php that can be placed in your Wordpress theme directory. Then you can create a new page with the Template BibExhibit that will show the application with the data source.
 
+<h3>CSL integration</h3>
+
+When you specify a CSL (citation style language) stylesheet via the csl parameter, 
+the formatting specified in the stylesheet is used to generate details.
+
+A .csl file must be a XML formatted file, containing the style tags defined by the citation Style language. 
+For further information of CSL you should visit the citationstyles.org website. If you want to use an existing 
+CSL style, you should browse the zotero style repository on zotero.org/styles. For creating your own CSL file, 
+you can either write an XML-file or use a visual editor e.g. editor.citationstyles.org/visualEditor/.
+
+We include some CSL files in the sub directory "style" - So, an easy way to try the functionality
+could be to link to one of those files - e.g. by an URL like the following:
+http://YOURDOMAIN/wp-data/plugins/mendeleyplugin/style/apa.csl
+
+For formatting entries via CLS, we are relying on the CiteProc.php formatting engine by Ron Jerome, 
+which usually is included in the plugins distribution. (See https://bitbucket.org/rjerome/citeproc-php
+for the original project.)
+
+The library includes locale-files for adapting the output to different languages.
+We have only included the DE and EN locales here. Please load additional locales from
+https://bitbucket.org/rjerome/citeproc-php/src/ and add them in the locale folder
+in the plugin folder.
+
 <h3>Thanks ...</h3>
 
 Thanks for contributions to Rhodri Cusack and Matthias Budde.
+
+Thanks for contributing to the CSL integration in V0.8 to Philipp Plagemann, Claudia Armbruster and Martin Wandtke.
 
 == Installation ==
 
@@ -166,6 +194,11 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 0.8
+* added support for formatting entries via CSL (Citation Style Language)
+* added tooltip display of full reference in widget lists
+* do not insert error responses in cache database
 
 = 0.7.8 =
 * initializeDatabase only checks for existence of table if db_version is wrong
