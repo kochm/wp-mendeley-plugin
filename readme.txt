@@ -120,6 +120,39 @@ and authorize the API. To do so the following steps have to be taken:
 <li> now you can use shortcodes in your pages and blogs
 </ol> 
 
+<h3>Details presentation</h3>
+
+The document lists in the widgets only include the title of the document and a link.
+Per default the link is either the url attribute of the document - or if not set a
+link to the doi attribute in the document if set.
+
+To present more details for those list entries without leaving the web site beginning
+in version 0.8.1 you have two options:
+
+1) if enabled in the configuration, the list items will include mouseover tooltips showing
+the full reference - this can be constructed in a simple default way or using CSL stylesheets.
+
+2) if a details url is set in the configuration, all list items are linked to
+      $DETAILSURL?docid=XXXX
+You can create a details page on your Wordpress installation in the following way:
+- create a page
+- insert the [mendeleydetails]...[/mendeleydetails] shortcode in the page
+- the text between the shortcodes is interpreted the following way:
+  every tag "{attributename}" is replaced by the corresponding attribute in the
+  Mendeley document
+- if you only use the simple shortcode [mendeleydetails] then the plugin
+  looks for the file "mendeley-details-template.tpl" in the plugin directory
+  and interprets the content of this file in the same way
+
+In addition to all attributes returned from Mendeley (abstract, authors, doi, 
+editors, translators, categories, identifiers, issue, keywords, mendeley_url, 
+pages, producers, publication_outlet, published_in, tags, title, type, url, uuid, 
+volume, year - also see the Mendeley API documentation at
+http://apidocs.mendeley.com/home/public-resources/search-details) you can use the 
+special attribute "full_reference" to insert a full reference. The attribute can
+be annotated with a CSL url to do the formatting according to a CSL stylesheet:
+{full_reference,http://site/url.csl}
+
 <h3>JSON data source</h3>
 
 In version 0.7 we added the functionality to create a JSON data source - e.g. to be used as data source in Exhibit/Simile application.
@@ -160,6 +193,7 @@ in the plugin folder.
 Thanks for contributions to Rhodri Cusack and Matthias Budde.
 
 Thanks for contributing to the CSL integration in V0.8 to Philipp Plagemann, Claudia Armbruster and Martin Wandtke.
+Thanks for contributing to the details display in V0.8.1 to Björn Trappe.
 
 == Installation ==
 
@@ -194,6 +228,9 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 0.8.1
+* added support for displaying details pages for references directly in Wordpress
 
 = 0.8
 * added support for formatting entries via CSL (Citation Style Language)

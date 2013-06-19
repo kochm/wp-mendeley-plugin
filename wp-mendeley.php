@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.8
+Version: 0.8.1
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '0.8' );
+define( 'PLUGIN_VERSION' , '0.8.1' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -92,7 +92,6 @@ if (!class_exists("MendeleyPlugin")) {
 			$resp = run_curl($request->to_url(), 'GET');
 			if ($this->settings['debug'] === 'true') {
 				echo "<p>Response:</p>";
-				var_dump($resp);
 			}
 
 			$result = json_decode($resp);
@@ -103,8 +102,70 @@ if (!class_exists("MendeleyPlugin")) {
 			return $result;
 		}
 		
-		function processShortcode($attrs = NULL) {
+		function processShortcodeList($attrs = null) {
 			return $this->formatCollection($attrs);
+		}
+
+		function processShortcodeDetails($attrs = null, $content = null) {
+			$docid = $_GET["docid"];
+			if (!$docid) {
+				return 'MendeleyPlugin: No docid specified on details page.';
+			}
+			if (!$content) {
+				$templatefile = __DIR__.'/mendeley-details-template.tpl';
+				if(file_exists($path2template)){
+                                	$content = file_get_contents($templatefile);
+                        	}
+                        	else {
+					return 'MendeleyPlugin: No template or template file available for details page.';
+                        	}
+			}
+			$doc = $this->getDocument($docid);
+			preg_match_all('/\{([^\}]*)\}/', $content, $matches);
+                        if(!isset($matches[0])){
+                                $matches[0] = array();
+                        }
+                        for($i=0;$i<count($matches[0]);$i++) {
+				$tmps = "";
+                                if(isset($doc->$matches[1][$i])) {
+                        		$tmps = $this->detailsFormat($doc, $matches[1][$i]);
+				} else {
+					$token = $matches[1][$i];
+					$tmparr = explode(",", $token, 2);
+					$token = $tmparr[0];
+					switch(strtolower($token)) {
+						case 'full_reference':
+							if (sizeof($tmparr)>1) {
+								$tmps = $this->formatDocument($doc, $tmparr[1]);
+							} else {
+								$tmps = $this->formatDocument($doc);
+							}
+							break;
+					}
+				}
+                        	$content = str_replace($matches[0][$i], $tmps, $content);
+                        }
+                        $content = preg_replace('/\{([^\s]*)\}/', '', $content);
+			return '<span>' . $content . '</span>';
+		}
+		protected function detailsFormat($doc, $token) {
+			switch(strtolower($token)) {
+				case 'authors':
+				case 'translators':
+				case 'editors':
+				case 'producers':
+					return implode('; ', array_map("detailsFormatMap1", $doc->$token));
+					break;
+				case 'identifiers':
+					return implode(', ', array_map("detailsFormatMap2", $doc->$token));
+					break;
+				case 'tags':
+				case 'keywords':
+					return implode(', ', array_map("detailsFormatMap2", $doc->$token));
+					break;
+				default:
+					return $doc->$token;
+			}
 		}
 		
 		// format a set of references (folders, groups, documents)
@@ -301,7 +362,7 @@ if (!class_exists("MendeleyPlugin")) {
 		}
 		
 		/* get all attributes (array) for a given document */
-		function getDocument($docid, $fromtype, $fromid) {
+		function getDocument($docid, $fromtype=null, $fromid=null) {
 			if (is_null($docid)) return NULL;
 			// check cache
 			$result = $this->getDocumentFromCache($docid);
@@ -339,7 +400,7 @@ if (!class_exists("MendeleyPlugin")) {
 
 		/* get the meta information (array) for all document ids in
 		   the array given as an input parameter */
-		function loadDocs($docidarr, $fromtype, $fromid, $count=0) {
+		function loadDocs($docidarr, $fromtype=null, $fromid=null, $count=0) {
 			$res = array();
 			if ($count == 0) { $count = sizeof($docidarr); }
 			for($i=0; $i < $count; $i++) {
@@ -623,11 +684,26 @@ if (!class_exists("MendeleyPlugin")) {
 		}
 		
 		function formatDocumentShort($doc,$csl=Null) {
-			$tmps = '<span class="wpmtitle" title="'.$this->formatDocument($doc,$csl,True).'">';
-			if (isset($doc->url)) {
-				$tmps .= '<a href="' .  $doc->url . '">' . $doc->title . '</a>';
+			if ($this->settings['detail_tips'] === 'false') {
+				$tmps = '<span class="wpmtitle">';
 			} else {
-				$tmps .= '<a href="' . $doc->mendeley_url . '">' . $doc->title . '</a>';
+				$tmps = '<span class="wpmtitle" title="'.$this->formatDocument($doc,$csl,True).'">';
+			}
+			$tmpurl = $this->settings['detail_url'];
+			if (isset($tmpurl) && strlen($tmpurl)>0) {
+				$tmpurl = $this->settings['detail_url'];
+				if (strpos($tmpurl, '?') !== false) {
+					$tmpurl .= '&docid=' . $doc->id;
+				} else {
+					$tmpurl .= '?docid=' . $doc->id;
+				}
+				$tmps .= '<a href="' .  $tmpurl . '">' . $doc->title . '</a>';
+			} else {
+				if (isset($doc->url)) {
+					$tmps .= '<a href="' .  $doc->url . '">' . $doc->title . '</a>';
+				} else {
+					$tmps .= '<a href="' . $doc->mendeley_url . '">' . $doc->title . '</a>';
+				}
 			}
 			$tmps .= '</span>';
 			return $tmps;
@@ -684,15 +760,6 @@ if (!class_exists("MendeleyPlugin")) {
 			if (isset($doc->pages)) {
 				$tmps .= '"pages" : "' . $doc->pages . '"' . ",\n";
 			}
-			/*
-			if (isset($doc->publisher)) {
-				if (isset($doc->city)) {
-					$tmps .= ', <span class="wpmpublisher">' . json_encode($doc->city) . ': ' . json_encode($doc->publisher) . '</span>';
-				} else {
-					$tmps .= ', <span class="wpmpublisher">' . json_encode($doc->publisher) . '</span>';
-				}
-			}
-			*/
 			if (isset($doc->url)) {
 				$tmps .= '"url" : ' . json_encode($doc->url) . ",\n";
 				// ...
@@ -933,6 +1000,12 @@ if (!class_exists("MendeleyPlugin")) {
 				if (isset($_POST['consumerSecret'])) {
 					$this->settings['consumer_secret'] = $_POST['consumerSecret'];
 				}
+				if (isset($_POST['detailUrl'])) {
+                                        $this->settings['detail_url'] = $_POST['detailUrl'];
+                                }
+                                if (isset($_POST['detailTips'])) {
+                                        $this->settings['detail_tips'] = $_POST['detailTips'];
+                                }
 				update_option($this->adminOptionsName, $this->settings);
 ?>
 <div class="updated"><p><strong><?php _e("Settings updated.", "MendeleyPlugin"); ?></strong></p></div>
@@ -1054,11 +1127,21 @@ Cache folder/group requests
 
 <p>To turn on caching is important, because Mendeley currently imposes a rate limit to requests to the service (currently 150 requests per hour - and we need one request for every single document details). See <a href="http://dev.mendeley.com/docs/rate-limiting">http://dev.mendeley.com/docs/rate-limiting</a> for more details on this restriction.</p>
 
+<h4>List Layout / Details</h4>
+
+<p>There are two types of lists in the plugin: 1) Lists in pages or posts generated by the shortcode [mendeley], 2) Lists in widgets. For 1) there are different ways for formatting the list entries - including the usage of CSL stylesheets or CSS formatting; for 2) usually only the title of the paper is displayed with a link (specified by the URL or the DOI in the documents data).</p>
+
+<p>Add tooltips with full references to widget list entries&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="radio" id="detailTips_yes" name="detailTips" value="true" <?php if ($this->settings['detail_tips'] === "true") { echo(' checked="checked"'); }?> /> Yes&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" id="detailTips_no" name="detailTips" value="false" <?php if ($this->settings['detail_tips'] === "false") { echo(' checked="checked"'); }?>/> No</p>
+<p>Relative URL to a details page (will be linked to widget list entries if specified):<br/>
+<input type="text" name="detailUrl" value="<?php echo $this->settings['detail_url']; ?>" size="60"></input></p>
+
 <h4>Debug</h4>
 
 <p>Current Plugin Version: <?php echo PLUGIN_VERSION; ?>, Current Database Version: <?php echo PLUGIN_DB_VERSION; ?></p>
 
-<p><input type="radio" id="debug_yes" name="debug" value="true" <?php if ($this->settings['debug'] === "true") { _e(' checked="checked"', "MendeleyPlugin"); }?> /> Yes&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" id="debug_no" name="debug" value="false" <?php if ($this->settings['debug'] === "false") { _e(' checked="checked"', "MendeleyPlugin"); }?>/> No</p>
+<p>Show debug messages in output&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="radio" id="debug_yes" name="debug" value="true" <?php if ($this->settings['debug'] === "true") { echo(' checked="checked"'); }?> /> Yes&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" id="debug_no" name="debug" value="false" <?php if ($this->settings['debug'] === "false") { echo(' checked="checked"'); }?>/> No</p>
  
 <div class="submit">
 <input type="submit" name="update_mendeleyPlugin" value="Update Settings">
@@ -1258,8 +1341,8 @@ if (isset($mendeleyPlugin)) {
 	add_action('admin_menu', 'wp_mendeley_add_pages');
 	// Filters
 	// Shortcodes
-	add_shortcode('mendeley', array(&$mendeleyPlugin,'processShortcode'));
-	add_shortcode('MENDELEY', array(&$mendeleyPlugin,'processShortcode'));
+	add_shortcode('mendeley', array(&$mendeleyPlugin,'processShortcodeList'));
+	add_shortcode('mendeleydetails', array(&$mendeleyPlugin,'processShortcodeDetails'));
 }
 
 
@@ -1453,5 +1536,7 @@ function endsWith($string, $postfix, $caseSensitive = true) {
 	return strrpos($string, $postfix, 0) === $expectedPostition;
 }
 
-  
+function detailsFormatMap1($el) { return $el->surname.', '.$el->forename; }
+function detailsFormatMap2($el) { return $el; }
+
 ?>
