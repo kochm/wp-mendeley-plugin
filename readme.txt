@@ -223,6 +223,11 @@ To upgrade the plugin, just deactivate the plugin, overwrite the plugin director
 
 == Frequently Asked Questions ==
 
+What PHP extensions do I need on my Web server to make the plugin work?
+
+Only need the CURL extension seems to be missing on some server systems. Everything else is standard.
+Use phpinfo(); to check what extensions are available on your server.
+
 How can I contribute to the development of the plugin?
 
 The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin/ - You may check out the newest code from there - and ask for being added as a developer to the repository to upload bug fixes and other additions.
@@ -230,6 +235,10 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 0.8.3
+* bug fixes
+* changed maximum number of documents to be retrieved from Mendeley from 1000 to 10000
 
 = 0.8.2
 * added support for filtering for more than one attribute at once
