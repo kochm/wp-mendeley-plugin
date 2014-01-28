@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.8.1
+Version: 0.8.2
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,13 +10,13 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '0.8.1' );
+define( 'PLUGIN_VERSION' , '0.8.2' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
 The MIT License
 
-Copyright (c) 2010-2013 Michael Koch (email: michael.koch@acm.org)
+Copyright (c) 2010-2014 Michael Koch (email: michael.koch@acm.org)
  
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -202,19 +202,6 @@ if (!class_exists("MendeleyPlugin")) {
 			}
 			$csl = (isset($attrs['csl'])?$attrs['csl']:Null) ;
 			$filter = (isset($attrs['filter'])?$attrs['filter']:array()) ;
-			$filterattr = NULL;
-			$filterval = NULL;
-			if (isset($filter)) {
-				if (strlen($filter)>0) {
-					$filterarr = explode('=', $filter);
-					$filterattr = $filterarr[0];
-					if (isset($filterarr[1])) {
-						$filterval = $filterarr[1];
-					} else {
-						$filterattr = NULL;
-					}
-				}
-			}
 			$maxtmp = $attrs['maxdocs'];
 			if (isset($maxtmp)) {
 				$maxdocs = intval($maxtmp);
@@ -227,7 +214,7 @@ if (!class_exists("MendeleyPlugin")) {
 			}
 
 			// output caching
-			$cacheid = $type."-".$id."-".$groupby.$grouporder."-".$sortby.$sortorder."-".$filterattr.$filterval."-".$maxdocs;
+			$cacheid = $type."-".$id."-".$groupby.$grouporder."-".$sortby.$sortorder."-".$filter."-".$maxdocs;
 			if (isset($csl)) {
 				$cacheid .= "-".$csl;
 			}
@@ -258,8 +245,8 @@ if (!class_exists("MendeleyPlugin")) {
 			}
 			foreach($docarr as $doc) {
 				// check filter
-				if (!is_null($filterattr)) {
-					$filtertrue = $this->checkFilter($filterattr, $filterval, $doc);
+				if (!is_null($filter)) {
+					$filtertrue = $this->checkFilter($filter, $doc);
 					if ($filtertrue == 0) { continue; }
 				}
 				// check if groupby-value changed
@@ -289,50 +276,73 @@ if (!class_exists("MendeleyPlugin")) {
 			return $result;
 		}		
 
-		/* check if a given document ($doc) matches the given filter ($filterattr, $filterval)
+		/* check if a given document ($doc) matches the given filter
 		   return 1 if the check is true, 0 otherwise */
-		function checkFilter($filterattr, $filterval, $doc) {
-			if (strcmp($filterattr, 'author')==0) {
+		function checkFilter($filter, $doc) {
+			if (!isset($filter)) {
+			   return 1;
+			}
+			if (strlen($filter)<1) {
+			   return 1;
+			}
+			// parse filters
+			$filterarr = explode(";", $filter);
+			foreach ($filterarr as $singlefilter) {
+			   $singlefilterarr = explode('=', $singlefilter);
+			   $filterattr = $singlefilterarr[0];
+			   if (isset($singlefilterarr[1])) {
+				$filterval = $singlefilterarr[1];
+			   } else {
+				continue;
+			   }
+			   if (strcmp($filterattr, 'author')==0) {
 				$author_arr = $doc->authors;
 				if (is_array($author_arr)) {
 					$tmps = $this->comma_separated_names($author_arr);
                        			if (!(stristr($tmps, $filterval) === FALSE)) {
-                               			return 1;
+                               			continue;
                        			}
 				}
-			} else if (strcmp($filterattr, 'editor')==0) {
+ 			   } else if (strcmp($filterattr, 'editor')==0) {
                                	$editor_arr = $doc->editors;
 				if (is_array($editor_arr)) {
 					$tmps = $this->comma_separated_names($editor_arr);
                        			if (!(stristr($tmps, $filterval) === FALSE)) {
-                               			return 1;
+                               			continue;
                        			}
                                	}
-			} else if (strcmp($filterattr, 'tag')==0) {
+			   } else if (strcmp($filterattr, 'tag')==0) {
                                	$tag_arr = $doc->tags;
 				if (is_array($tag_arr)) {
                                		for($i = 0; $i < sizeof($tag_arr); ++$i) {
                                			if (!(stristr($tag_arr[$i], $filterval) === FALSE)) {
-                               				return 1;
+                               				continue;
 						}
                                		}
                                	}
-			} else if (strcmp($filterattr, 'keyword')==0) {
+			   } else if (strcmp($filterattr, 'keyword')==0) {
                                	$keyword_arr = $doc->keywords;
 				if (is_array($keyword_arr)) {
                                		for($i = 0; $i < sizeof($keyword_arr); ++$i) {
                                			if (!(stristr($keyword_arr[$i], $filterval) === FALSE)) {
-                               				return 1;
+                               				continue;
 						}
                                		}
                                	}
-                        } else {
+                           } else {
+echo "$filterattr : ";
+// var_dump($doc);
                                	// other attributes
-                                if (strcmp($keyval, $doc->{$key})==0) {
-					return 1;
+				if (!isset($doc->{$filterattr})) {
+				   continue;
+				}
+                                if (strcmp($filterval, $doc->{$filterattr})==0) {
+					continue;
                                 }
-			}
-			return 0;
+			   }
+			   return 0;
+			} // foreach singlefilter
+			return 1;
 		}
 
 		
@@ -1089,7 +1099,7 @@ For further information a short example is given in the readme.txt or visit the 
 <p><ul>
 <li>- [mendeley type="folders" id="xxx" groupby=""], groupby=year,authors; sortby; sortorder
 <li>- [mendeley type="groups" id="763" sortby="year" sortorder="desc"]
-<li>- [mendeley type="groups" id="xxx" groupby="" filter=""], filter=ATTRNAME=AVALUE, e.g. author=Michael Koch
+<li>- [mendeley type="groups" id="xxx" groupby="" filter=""], filter=ATTRNAME=AVALUE[;ATTRNAME=AVALUE], e.g. author=Michael Koch
 <li>- [mendeley type="documents" id="authored" groupby="year"]
 <li>- [mendeley type="documents" id="123456789"]
 <li>- [mendeley type="own"]
@@ -1234,16 +1244,10 @@ and stored in the plugin.</p>
 		 */
 		function generateJSONFile($id, $type="folders", $filter="") {
 			if (isset($filter)) {
-                                if (strlen($filter)>0) {
-                                        $filterarr = explode('=', $filter);
-                                        $filterattr = $filterarr[0];
-                                        if (isset($filterarr[1])) {
-                                                $filterval = $filterarr[1];
-                                        } else {
-                                                $filterattr = NULL;
-                                        }
-                                }
-                        }
+                                if (strlen($filter)<0) {
+				   $filter = NULL;
+				}
+			}
 			// type can be folders, groups, documents
                         $res = $this->getItemsByType($type, $id);
                         // process the data
@@ -1270,8 +1274,8 @@ and stored in the plugin.</p>
 			$isFirst = 1;
 			foreach($docarr as $doc) {
 				// check filter
-                                if (!is_null($filterattr)) {
-                                        $filtertrue = $this->checkFilter($filterattr, $filterval, $doc);
+                                if (!is_null($filter)) {
+                                        $filtertrue = $this->checkFilter($filter, $doc);
                                         if ($filtertrue == 0) { continue; }
                                 }
 				if ($isFirst == 0) {
@@ -1365,8 +1369,7 @@ class MendeleyCollectionWidget extends WP_Widget {
         // collection id
         $cid = apply_filters('widget_cid', $instance['cid']);
         $maxdocs = apply_filters('widget_cid', $instance['count']);
-        $filterattr = apply_filters('widget_cid', $instance['filterattr']);
-        $filterval = apply_filters('widget_cid', $instance['filterval']);
+        $filter = apply_filters('widget_cid', $instance['filter']);
 	$csl = apply_filters('widget_cid', $instance['csl']);
         ?>
               <?php echo $before_widget; ?>
@@ -1374,10 +1377,10 @@ class MendeleyCollectionWidget extends WP_Widget {
                         echo $before_title . $title . $after_title; ?>
               <?php
               		$result = '<ul class="wpmlist">';
-			if (strlen($filterattr)<1) {
-				$result .= $mendeleyPlugin->formatWidget($ctype, $cid, $maxdocs);
+			if (strlen($filter)<1) {
+				$result .= $mendeleyPlugin->formatWidget($ctype, $cid, $maxdocs, array('csl' => $csl));
 			} else {
-				$result .= $mendeleyPlugin->formatWidget($ctype, $cid, $maxdocs, array($filterattr => $filterval, 'csl' => $csl));
+				$result .= $mendeleyPlugin->formatWidget($ctype, $cid, $maxdocs, array('filter' => $filter, 'csl' => $csl));
 			}
 			$result .= '</ul>';
 			echo $result;
@@ -1393,8 +1396,7 @@ class MendeleyCollectionWidget extends WP_Widget {
 	$instance['ctype'] = strip_tags($new_instance['ctype']);
 	$instance['cid'] = strip_tags($new_instance['cid']);
 	$instance['count'] = strip_tags($new_instance['count']);
-	$instance['filterattr'] = strip_tags($new_instance['filterattr']);
-	$instance['filterval'] = strip_tags($new_instance['filterval']);
+	$instance['filter'] = strip_tags($new_instance['filter']);
 	$instance['csl'] = strip_tags($new_instance['csl']);
         return $instance;
     }
@@ -1405,16 +1407,14 @@ class MendeleyCollectionWidget extends WP_Widget {
         $cid = esc_attr($instance['cid']);
         $ctype = esc_attr($instance['ctype']);
         $count = esc_attr($instance['count']);
-        $filterattr = esc_attr($instance['filterattr']);
-        $filterval = esc_attr($instance['filterval']);
+        $filter = esc_attr($instance['filter']);
 	$csl = esc_attr($instance['csl']);
         ?>
         <p><label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo $title; ?>" /></label></p>
         <p><label for="<?php echo $this->get_field_id('ctype'); ?>"><?php _e('Collection Type:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('ctype'); ?>" name="<?php echo $this->get_field_name('ctype'); ?>" type="text" value="<?php echo $ctype; ?>" /></label> (folder, group, documents)</p>
         <p><label for="<?php echo $this->get_field_id('cid'); ?>"><?php _e('Group/Folder Id:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('cid'); ?>" name="<?php echo $this->get_field_name('cid'); ?>" type="text" value="<?php echo $cid; ?>" /></label></p>
  		<p><label for="<?php echo $this->get_field_id('count'); ?>"><?php _e('Number of docs to display:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('count'); ?>" name="<?php echo $this->get_field_name('count'); ?>" type="text" value="<?php echo $count; ?>" /></label></p>
- 		<p><label for="<?php echo $this->get_field_id('filterattr'); ?>"><?php _e('Attribute name to filter for:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('filterattr'); ?>" name="<?php echo $this->get_field_name('filterattr'); ?>" type="text" value="<?php echo $filterattr; ?>" /></label></p>
- 		<p><label for="<?php echo $this->get_field_id('filterval'); ?>"><?php _e('Attribute value:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('filterval'); ?>" name="<?php echo $this->get_field_name('filterval'); ?>" type="text" value="<?php echo $filterval; ?>" /></label></p>
+ 		<p><label for="<?php echo $this->get_field_id('filter'); ?>"><?php _e('(Optional) Filter:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('filter'); ?>" name="<?php echo $this->get_field_name('filter'); ?>" type="text" value="<?php echo $filter; ?>" /></label></p>
 		<p><label for="<?php echo $this->get_field_id('csl'); ?>"><?php _e('Attribute value:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('csl'); ?>" name="<?php echo $this->get_field_name('csl'); ?>" type="text" value="<?php echo $csl; ?>" /></label></p>
         <?php 
     }

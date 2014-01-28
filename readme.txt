@@ -21,6 +21,7 @@ The lists can be included in posts or pages using WordPress shortcodes:
 &#91;mendeley type="groups" id="xxx" sortby="xxx" sortbyorder="xxx"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx" filter="author=Michael Koch"&#93;
+&#91;mendeley type="groups" id="xxx" groupby="xxx" filter="author=Michael Koch;type=Book Section"&#93;
 &#91;mendeley type="documents" id="authored" groupby="year"&#93;
 &#91;mendeley type="documents" id="authored" filter="tag=perceptualorganization"&#93;
 &#91;mendeley type="documents" id="authored" sortby="authors" sortbyorder="asc" groupby="year" grouporder="desc"%#93;
@@ -32,6 +33,7 @@ The lists can be included in posts or pages using WordPress shortcodes:
 - the attribute "sortby" is optional; possible values currently are: "authors", "year"
 - the attributes "sortbyorder" and "groupbyorder" can have the values "asc" and "desc"
 - sorting on the sort key is done before grouping on the group key if both are provided
+- in "filter" one or more equal matches can be filtered for; if more than one filter rule is specified, than documents are displayed only when all filter rules match
 - possible attributes to filter for are: author, editor, title, year, tag, keyword, url, publication_outlet, pages, issue, volume, city, publisher, abstract
 - the attribute "csl" is optional; the value must contain a valid URL with a .csl file
 </pre>
@@ -228,6 +230,9 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 0.8.2
+* added support for filtering for more than one attribute at once
 
 = 0.8.1
 * added support for displaying details pages for references directly in Wordpress
