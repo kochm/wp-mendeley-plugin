@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.8.4
+Version: 0.8.5
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '0.8.4' );
+define( 'PLUGIN_VERSION' , '0.8.5' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -513,8 +513,15 @@ if (!class_exists("MendeleyPlugin")) {
 				$cacheid = "csl-".$csl;
 				$csl_file = $this->getOutputFromCache($cacheid);
 				if (empty($csl_file)) {
-                        		$csl_file = file_get_contents($csl);
-					$this->updateOutputInCache($cacheid, $csl_file);
+				        $curl = curl_init($csl);
+					curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+                        		$csl_file = curl_exec($curl);
+					if ($csl_file !== false) {
+					  $this->updateOutputInCache($cacheid, $csl_file);
+					} else {
+					  echo "<p>Mendeley Plugin Error: " . curl_error($curl) . "</p>";
+					}
+					curl_close($curl);
 				}
                         	$csl_object = simplexml_load_string($csl_file);
 

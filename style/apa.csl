@@ -2,7 +2,8 @@
 <style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" demote-non-dropping-particle="never">
   <!-- This style was edited with the Visual CSL Editor (http://steveridout.com/csl/visualEditor/) -->
   <info>
-    <title>American Psychological Association 6th Edition</title>
+    <title>American Psychological Association 6th edition</title>
+    <title-short>APA</title-short>
     <id>http://www.zotero.org/styles/apa</id>
     <link href="http://www.zotero.org/styles/apa" rel="self"/>
     <link href="http://owl.english.purdue.edu/owl/resource/560/01/" rel="documentation"/>
@@ -27,7 +28,7 @@
     <category citation-format="author-date"/>
     <category field="psychology"/>
     <category field="generic-base"/>
-    <updated>2012-09-27T22:06:38+00:00</updated>
+    <updated>2013-12-13T16:55:54+00:00</updated>
     <rights license="http://creativecommons.org/licenses/by-sa/3.0/">This work is licensed under a Creative Commons Attribution-ShareAlike 3.0 License</rights>
   </info>
   <locale xml:lang="en">
@@ -54,10 +55,10 @@
   </macro>
   <macro name="secondary-contributors">
     <choose>
-      <if type="chapter paper-conference" match="none">
+      <if type="article-journal chapter paper-conference" match="none">
         <names variable="translator editor" delimiter=", " prefix=" (" suffix=")">
           <name and="symbol" initialize-with=". " delimiter=", "/>
-          <label form="short" prefix=", " text-case="title" suffix=""/>
+          <label form="short" prefix=", " text-case="title"/>
         </names>
       </if>
     </choose>
@@ -134,11 +135,7 @@
                 <group delimiter=" ">
                   <text term="retrieved" text-case="capitalize-first" suffix=" "/>
                   <group>
-                    <date variable="accessed" suffix=", ">
-                      <date-part name="month" suffix=" "/>
-                      <date-part name="day" suffix=", "/>
-                      <date-part name="year"/>
-                    </date>
+                    <date variable="accessed" form="text" suffix=", "/>
                   </group>
                   <text term="from"/>
                   <text variable="URL"/>
@@ -167,7 +164,21 @@
         </group>
       </if>
       <else-if type="book graphic  motion_picture report song manuscript speech" match="any">
-        <text variable="title" font-style="italic"/>
+        <!---This is a hack until we have a computer program type -->
+        <choose>
+          <if variable="version">
+            <group delimiter=" ">
+              <text variable="title"/>
+              <group delimiter=" " prefix="(" suffix=")">
+                <text term="version" text-case="capitalize-first"/>
+                <text variable="version"/>
+              </group>
+            </group>
+          </if>
+          <else>
+            <text variable="title" font-style="italic"/>
+          </else>
+        </choose>
       </else-if>
       <else>
         <text variable="title"/>
@@ -209,19 +220,23 @@
   </macro>
   <macro name="event">
     <choose>
-      <if variable="event">
+      <if variable="container-title" match="none">
         <choose>
-          <if variable="genre" match="none">
-            <text term="presented at" text-case="capitalize-first" suffix=" "/>
-            <text variable="event"/>
+          <if variable="event">
+            <choose>
+              <if variable="genre" match="none">
+                <text term="presented at" text-case="capitalize-first" suffix=" "/>
+                <text variable="event"/>
+              </if>
+              <else>
+                <group delimiter=" ">
+                  <text variable="genre" text-case="capitalize-first"/>
+                  <text term="presented at"/>
+                  <text variable="event"/>
+                </group>
+              </else>
+            </choose>
           </if>
-          <else>
-            <group delimiter=" ">
-              <text variable="genre" text-case="capitalize-first"/>
-              <text term="presented at"/>
-              <text variable="event"/>
-            </group>
-          </else>
         </choose>
       </if>
     </choose>
@@ -336,14 +351,10 @@
       <else-if type="legal_case">
         <group prefix=" (" suffix=")" delimiter=" ">
           <text variable="authority"/>
-          <date variable="issued" delimiter=" ">
-            <date-part name="month" form="short"/>
-            <date-part name="day" suffix=","/>
-            <date-part name="year"/>
-          </date>
+          <date variable="issued" form="text"/>
         </group>
       </else-if>
-      <else-if type="bill legislation">
+      <else-if type="bill legislation" match="any">
         <date variable="issued" prefix=" (" suffix=")">
           <date-part name="year"/>
         </date>
@@ -377,9 +388,12 @@
   </macro>
   <macro name="container-title">
     <choose>
-      <if type="bill legal_case legislation" match="none">
-        <text variable="container-title" font-style="italic"/>
+      <if type="article article-journal article-magazine article-newspaper" match="any">
+        <text variable="container-title" font-style="italic" text-case="title"/>
       </if>
+      <else-if type="bill legal_case legislation" match="none">
+        <text variable="container-title" font-style="italic"/>
+      </else-if>
       <else>
         <group delimiter=" " prefix=", ">
           <choose>
@@ -430,6 +444,7 @@
     <sort>
       <key macro="author"/>
       <key macro="issued-sort" sort="ascending"/>
+      <key macro="title"/>
     </sort>
     <layout>
       <group suffix=".">

@@ -179,7 +179,7 @@ you can either write an XML-file or use a visual editor e.g. editor.citationstyl
 
 We include some CSL files in the sub directory "style" - So, an easy way to try the functionality
 could be to link to one of those files - e.g. by an URL like the following:
-http://YOURDOMAIN/wp-data/plugins/mendeleyplugin/style/apa.csl
+http://YOURDOMAIN/wp-content/plugins/mendeleyplugin/style/apa.csl
 
 For formatting entries via CLS, we are relying on the CiteProc.php formatting engine by Ron Jerome, 
 which usually is included in the plugins distribution. (See https://bitbucket.org/rjerome/citeproc-php
@@ -235,6 +235,10 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 0.8.5 (29.01.2014)
+* using cURL to load CSL files (instead of get_file_content)
+* added error message when loading CSL file fails
 
 = 0.8.4
 * updated CiteProc library (for formatting CSL) to version from 15.3.2013
