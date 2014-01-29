@@ -236,6 +236,11 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 
 == Change log ==
 
+= 0.8.4
+* updated CiteProc library (for formatting CSL) to version from 15.3.2013
+* completely removed number of documents limit when reading from Mendeley
+* bug fix: filtering by tags and keywords now works again
+
 = 0.8.3
 * bug fixes
 * changed maximum number of documents to be retrieved from Mendeley from 1000 to 10000

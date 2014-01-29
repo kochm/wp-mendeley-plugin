@@ -1647,20 +1647,18 @@ class csl_mapper {
   // convention of your incomming data object differs from the CSL standard (http://citationstyles.org/downloads/specification.html#id78)
   // you should adjust the array values accordingly.
 
-  // field_map changed for MendeleyPlugin - to avoid "-" in variable names
-
   function map_field($field) {
     if (!isset($this->field_map)) {
       $this->field_map = array('title' => 'title',
-                                'container-title' => 'container_title',
-                                'collection-title' => 'collection_title',
-                                'original-title' => 'original_title',
+                                'container-title' => 'container-title',
+                                'collection-title' => 'collection-title',
+                                'original-title' => 'original-title',
                                 'publisher' => 'publisher',
-                                'publisher-place' => 'publisher_place',
-                                'original-publisher' => 'original_publisher',
-                                'original-publisher-place' => 'original_publisher_place',
+                                'publisher-place' => 'publisher-place',
+                                'original-publisher' => 'original-publisher',
+                                'original-publisher-place' => 'original-publisher-place',
                                 'archive' => 'archive',
-                                'archive-place' => 'archive_place',
+                                'archive-place' => 'archive-place',
                                 'authority' => 'authority',
                                 'archive_location' => 'authority',
                                 'event' => 'event',
@@ -1670,10 +1668,10 @@ class csl_mapper {
                                 'locator' => 'locator',
                                 'version' => 'version',
                                 'volume' => 'volume',
-                                'number-of-volumes' => 'number_of_volumes',
-                                'number-of-pages' => 'number_of_pages',
+                                'number-of-volumes' => 'number-of-volumes',
+                                'number-of-pages' => 'number-of-pages',
                                 'issue' => 'issue',
-                                'chapter-number' => 'chapter_number',
+                                'chapter-number' => 'chapter-number',
                                 'medium' => 'medium',
                                 'status' => 'status',
                                 'edition' => 'edition',
@@ -1688,10 +1686,10 @@ class csl_mapper {
                                 'URL' => 'URL',
                                 'DOI' => 'DOI',
                                 'ISBN' => 'ISBN',
-                                'call-number' => 'call_number',
-                                'citation-number' => 'citation_number',
-                                'citation-label' => 'citation_label',
-                                'first-reference-note-number' => 'first_reference_note_number',
+                                'call-number' => 'call-number',
+                                'citation-number' => 'citation-number',
+                                'citation-label' => 'citation-label',
+                                'first-reference-note-number' => 'first-reference-note-number',
                                 'year-suffix' => 'year-suffix',
                                 'jurisdiction' => 'jurisdiction',
 
@@ -1701,7 +1699,7 @@ class csl_mapper {
                                 'event' => 'event',
                                 'accessed' => 'accessed',
                                 'container' => 'container',
-                                'original-date' => 'original_date',
+                                'original-date' => 'original-date',
 
                                     //Name Variables'
 
@@ -1712,10 +1710,10 @@ class csl_mapper {
                                 'interviewer' => 'interviewer',
                                 'publisher' => 'publisher',
                                 'composer' => 'composer',
-                                'original-publisher' => 'original_publisher',
-                                'original-author' => 'original_author',
-                                'container-author' => 'container_author',
-                                'collection-editor' => 'collection_editor',
+                                'original-publisher' => 'original-publisher',
+                                'original-author' => 'original-author',
+                                'container-author' => 'container-author',
+                                'collection-editor' => 'collection-editor',
                               );
     }
 

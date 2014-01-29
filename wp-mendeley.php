@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.8.3
+Version: 0.8.4
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '0.8.3' );
+define( 'PLUGIN_VERSION' , '0.8.4' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -314,20 +314,28 @@ if (!class_exists("MendeleyPlugin")) {
 			   } else if (strcmp($filterattr, 'tag')==0) {
                                	$tag_arr = $doc->tags;
 				if (is_array($tag_arr)) {
+				   	$ismatch = 0;
                                		for($i = 0; $i < sizeof($tag_arr); ++$i) {
                                			if (!(stristr($tag_arr[$i], $filterval) === FALSE)) {
-                               				continue;
+                               				$ismatch = 1;
 						}
                                		}
+					if ($ismatch == 1) {
+					   continue;
+					}
                                	}
 			   } else if (strcmp($filterattr, 'keyword')==0) {
                                	$keyword_arr = $doc->keywords;
 				if (is_array($keyword_arr)) {
+				   	$ismatch = 0;
                                		for($i = 0; $i < sizeof($keyword_arr); ++$i) {
                                			if (!(stristr($keyword_arr[$i], $filterval) === FALSE)) {
-                               				continue;
+                               				$ismatch = 1;
 						}
                                		}
+					if ($ismatch == 1) {
+					   continue;
+					}
                                	}
                            } else {
                                	// other attributes
@@ -356,9 +364,9 @@ if (!class_exists("MendeleyPlugin")) {
 				$doc_ids = $result->document_ids;
 				return $doc_ids;
 			}
-			$url = MENDELEY_OAPI_URL . "library/$type/$id/?page=0&items=10000";
+			$url = MENDELEY_OAPI_URL . "library/$type/$id/";
 			if ($type === "own") { 
-				$url = MENDELEY_OAPI_URL . "library/documents/authored/?page=0&items=10000";
+				$url = MENDELEY_OAPI_URL . "library/documents/authored/";
 			}
 			$result = $this->sendAuthorizedRequest($url);
 			$this->updateCollectionInCache($cacheid, $result);
