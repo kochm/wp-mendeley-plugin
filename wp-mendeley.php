@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.8.5
+Version: 0.8.8
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '0.8.5' );
+define( 'PLUGIN_VERSION' , '0.8.8' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -220,8 +220,12 @@ if (!class_exists("MendeleyPlugin")) {
 			}
 			$cacheresult = $this->getOutputFromCache($cacheid);
 			if (!empty($cacheresult)) {
-				return $result.$cacheresult;
+			   if ($this->settings['debug'] === 'true') {
+				$result .= "<p>Mendeley Plugin: using cached output</p>";
+			   }
+			   return $result.$cacheresult;
 			}
+			$cacheresult = "";
 
 			// type can be own, folders, groups, documents
 			$res = $this->getItemsByType($type, $id);
@@ -243,17 +247,20 @@ if (!class_exists("MendeleyPlugin")) {
 					$error_message = "";
 				}
 			}
+			$countfiltered = 0;
 			foreach($docarr as $doc) {
 				// check filter
 				if (!is_null($filter)) {
 					$filtertrue = $this->checkFilter($filter, $doc);
 					if ($filtertrue == 0) { continue; }
+					$countfiltered++;
 				}
-				// check if groupby-value changed
+				// check if groupby-value has changed
 				if (isset($groupby)) {
 					$groupbyval = $doc->$groupby;
 					if (!($groupbyval === $currentgroupbyval)) {
 						$result = $result . '<h2 class="wpmgrouptitle">' . $groupbyval . '</h2>';
+						$cacheresult = $cacheresult . '<h2 class="wpmgrouptitle">' . $groupbyval . '</h2>';
 						$currentgroupbyval = $groupbyval;
 					}
 				}
@@ -262,17 +269,26 @@ if (!class_exists("MendeleyPlugin")) {
 				// standard one ("standard") - the latter allows the optional attribute "csl"
 				if ($style === "shortlist") {
 					$result .= '<li class="wpmlistref">' . $this->formatDocumentShort($doc) .  '</li>';
+					$cacheresult .= '<li class="wpmlistref">' . $this->formatDocumentShort($doc) .  '</li>';
 				} else {
 					// do static formatting or formatting with CSL stylesheet
 					$result = $result . $this->formatDocument($doc,$csl);
+					$cacheresult = $cacheresult . $this->formatDocument($doc,$csl);
 				}
 
 				if ($maxdocs > 0) {
-					$count++;  
-					if ($count > $maxdocs) break;
+					if ($countfiltered > $maxdocs) {
+					   if ($this->settings['debug'] === 'true') {
+					      $result .= "<p>Mendeley Plugin: aborting output because maximum number of documents ($maxdocs) reached</p>";
+					   }		      
+					   break;
+					}
 				}	
 			}
-			$this->updateOutputInCache($cacheid, $result);
+			if ($this->settings['debug'] === 'true') {
+				$result .= "<p>Mendeley Plugin: Filtered results count: " . $countfiltered . "</p>";
+			}
+			$this->updateOutputInCache($cacheid, $cacheresult);
 			return $result;
 		}		
 
@@ -295,23 +311,27 @@ if (!class_exists("MendeleyPlugin")) {
 			   } else {
 				continue;
 			   }
-			   if (strcmp($filterattr, 'author')==0) {
+			   switch ($filterattr) {
+			   case "author":
 				$author_arr = $doc->authors;
 				if (is_array($author_arr)) {
 					$tmps = $this->comma_separated_names($author_arr);
-                       			if (!(stristr($tmps, $filterval) === FALSE)) {
-                               			continue;
+                       			if (stristr($tmps, $filterval) === FALSE) {
+                               			return 0;
                        			}
 				}
- 			   } else if (strcmp($filterattr, 'editor')==0) {
+				break;
+			   case "editor":
                                	$editor_arr = $doc->editors;
 				if (is_array($editor_arr)) {
 					$tmps = $this->comma_separated_names($editor_arr);
-                       			if (!(stristr($tmps, $filterval) === FALSE)) {
-                               			continue;
+                       			if (stristr($tmps, $filterval) === FALSE) {
+                               			return 0;
                        			}
                                	}
-			   } else if (strcmp($filterattr, 'tag')==0) {
+				break;
+			   case "tag":
+			   case "tags":
                                	$tag_arr = $doc->tags;
 				if (is_array($tag_arr)) {
 				   	$ismatch = 0;
@@ -320,11 +340,13 @@ if (!class_exists("MendeleyPlugin")) {
                                				$ismatch = 1;
 						}
                                		}
-					if ($ismatch == 1) {
-					   continue;
+					if ($ismatch == 0) {
+					   return 0;
 					}
                                	}
-			   } else if (strcmp($filterattr, 'keyword')==0) {
+				break;
+			   case "keyword":
+			   case "keywords":
                                	$keyword_arr = $doc->keywords;
 				if (is_array($keyword_arr)) {
 				   	$ismatch = 0;
@@ -333,20 +355,20 @@ if (!class_exists("MendeleyPlugin")) {
                                				$ismatch = 1;
 						}
                                		}
-					if ($ismatch == 1) {
-					   continue;
+					if ($ismatch == 0) {
+					   return 0;
 					}
                                	}
-                           } else {
+				break;
+			   default:
                                	// other attributes
 				if (!isset($doc->{$filterattr})) {
 				   continue;
 				}
-                                if (strcmp($filterval, $doc->{$filterattr})==0) {
-					continue;
+                                if (!(strcmp($filterval, $doc->{$filterattr})==0)) {
+				   return 0;
                                 }
-			   }
-			   return 0;
+			   } // switch
 			} // foreach singlefilter
 			return 1;
 		}
@@ -362,11 +384,12 @@ if (!class_exists("MendeleyPlugin")) {
 			$result = $this->getCollectionFromCache($cacheid);
 			if (!is_null($result)) {
 				$doc_ids = $result->document_ids;
+				// TBD: Debug Log: Using Cached Query Results
 				return $doc_ids;
 			}
-			$url = MENDELEY_OAPI_URL . "library/$type/$id/";
+			$url = MENDELEY_OAPI_URL . "library/$type/$id/?page=0&items=10000";
 			if ($type === "own") { 
-				$url = MENDELEY_OAPI_URL . "library/documents/authored/";
+				$url = MENDELEY_OAPI_URL . "library/documents/authored/?page=0&items=10000";
 			}
 			$result = $this->sendAuthorizedRequest($url);
 			$this->updateCollectionInCache($cacheid, $result);
@@ -535,9 +558,11 @@ if (!class_exists("MendeleyPlugin")) {
                                 $docdata->title = $doc->title;
                                 if (isset($doc->published_in)) {
                                         $docdata->container_title = $doc->published_in;
+                                        $docdata->collection_title = $doc->published_in;
                                 }
                                 if (isset($doc->publication_outlet)) {
                                         $docdata->container_title = $doc->publication_outlet;
+                                        $docdata->collection_title = $doc->publication_outlet;
                                 }
                                 if (isset($doc->journal)) {
                                         $docdata->container_title = $doc->journal;
@@ -690,9 +715,9 @@ if (!class_exists("MendeleyPlugin")) {
 				$this->type_map = array(
 						'Book' => 'book',
 						'Book Section' => 'chapter',
-						'Journal Article' => 'article',
-						'Magazine Article' => 'article',
-						'Newspaper Article' => 'article',
+						'Journal Article' => 'article-journal',
+						'Magazine Article' => 'article-magazine',
+						'Newspaper Article' => 'article-newspaper',
 						'Conference Proceedings' => 'paper-conference',
 						'Report' => 'report',
 						'Thesis' => 'thesis',
@@ -1440,7 +1465,7 @@ class MendeleyCollectionWidget extends WP_Widget {
 class MendeleyOwnWidget extends WP_Widget {
     /** constructor */
     function MendeleyOwnWidget() {
-        parent::WP_Widget(false, $name = 'Mendeley Collection');	
+        parent::WP_Widget(false, $name = 'Mendeley My Publications');	
     }
 
     /** @see WP_Widget::widget */

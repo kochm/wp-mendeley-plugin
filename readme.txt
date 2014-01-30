@@ -34,7 +34,7 @@ The lists can be included in posts or pages using WordPress shortcodes:
 - the attributes "sortbyorder" and "groupbyorder" can have the values "asc" and "desc"
 - sorting on the sort key is done before grouping on the group key if both are provided
 - in "filter" one or more equal matches can be filtered for; if more than one filter rule is specified, than documents are displayed only when all filter rules match
-- possible attributes to filter for are: author, editor, title, year, tag, keyword, url, publication_outlet, pages, issue, volume, city, publisher, abstract
+- possible attributes to filter for are: author, editor, title, year, tag, keyword, url, publication_outlet, pages, issue, volume, city, publisher, abstract (when filtering for tag or keyword, a substring search is performed, so "blog" also matches "microblog")
 - the attribute "csl" is optional; the value must contain a valid URL with a .csl file
 </pre>
 
@@ -235,6 +235,17 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 0.8.8 (30.01.2014)
+* do not include log output in output caching
+* bug fix: CSL formatting now works again (problem with missing elements in output e.g. journal title)
+
+= 0.8.7 (29.01.2014)
+* refactoring of filtering code to deal with minor problems
+
+= 0.8.6 (29.01.2014)
+* corrected name of "My Publications" widget
+* again set maximum number of documents (to 10000) since omitting this value sometimes defaults to 10 ...
 
 = 0.8.5 (29.01.2014)
 * using cURL to load CSL files (instead of get_file_content)
