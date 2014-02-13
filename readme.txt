@@ -202,7 +202,8 @@ Thanks for contributing to the details display in V0.8.1 to Björn Trappe.
 <ol>
 <li> Upload archive contents to the `/wp-content/plugins/` directory
 <li> Activate the plugin through the 'Plugins' menu in WordPress
-<li> Configure your settings (especially enter Customer Key and Customer Secret obtained from Mendeley), and request Access Token
+<li> Obtain Client Id and Client Secret from Mendeley (see http://dev.mendeley.com/applications/register/) - When asked for a callback/redirection URI, specify the URL provided on the options page of the plugin
+<li> Configure your settings (especially enter Client Id and Client Secret obtained from Mendeley), and press "Request Access Token"
 </ol>
 
 <p>Please make sure that caching is switched on when accessing shared collections! There is currently an access rate limit of 150 requests per hour - and since we need one request for every document (for retrieving the details) this limit is reached quickly.</p>
@@ -211,11 +212,6 @@ Thanks for contributing to the details display in V0.8.1 to Björn Trappe.
 
 <p>There are some reported problems with other plugins that are using the OAuth PHP library like tweetblender: If the other plugin does not check if the library is already loaded (as ours does), initializing the other plugins after wp_mendeley will result in an error message. In this case deactivate the other plugin.</p>
 
-<p>Tutorials / descriptions contributed by others:
-<ul>
-<li><a href="http://tramullas.com/2012/02/23/integrando-mendeley-en-wordpress-2/">Spanish tutorial about installing and using the plugin (v0.7)</a> by Jesús Tramullas</li>
-</ul>
-</p>
 
 == Upgrade Notice ==
 
@@ -235,6 +231,10 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 0.9 (12.2.2014)
+* Added support for OAuth2 authentication (since the Mendeley API no longer supports OAuth1)
+* Support for OAuth1 remains in rudimentary form (if you already have authorized the plugin, you can continue to use it)
 
 = 0.8.8 (30.01.2014)
 * do not include log output in output caching

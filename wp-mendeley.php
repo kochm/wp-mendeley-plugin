@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.8.8
+Version: 0.9
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '0.8.8' );
+define( 'PLUGIN_VERSION' , '0.9' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -37,14 +37,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+// OAuth2 (since v0.9)
+define( 'OAUTH2_AUTHORIZE_ENDPOINT', 'https://api-oauth2.mendeley.com/oauth/authorize' );
+define( 'OAUTH2_REQUEST_TOKEN_ENDPOINT', 'https://api-oauth2.mendeley.com/oauth/token' );
+define( 'MENDELEY_OAPI_URL', 'https://api-oauth2.mendeley.com/oapi/' );
+
+// the following import is still needed for OAuth1 support - will be removed after May 2014
 if (!class_exists("OAuthConsumer")) {
 	require_once "oauth/OAuth.php"; 
 }
-
-define( 'REQUEST_TOKEN_ENDPOINT', 'http://www.mendeley.com/oauth/request_token/' );
-define( 'ACCESS_TOKEN_ENDPOINT', 'http://www.mendeley.com/oauth/access_token/' );
-define( 'AUTHORIZE_ENDPOINT', 'http://www.mendeley.com/oauth/authorize/' );
-define( 'MENDELEY_OAPI_URL', 'http://api.mendeley.com/oapi/' );
 
 // JSON services for PHP4
 if (!function_exists('json_encode')) {
@@ -67,9 +68,6 @@ if (!class_exists("MendeleyPlugin")) {
 	class MendeleyPlugin {
 		var $adminOptionsName = "MendeleyPluginAdminOptions";
 		protected $options = null;
-		protected $consumer = null;
-		protected $acctoken = null;
-		protected $sign_method = null;
 		protected $error_message = "";
 		function MendeleyPlugin() { // constructor
 			$this->init();
@@ -79,21 +77,82 @@ if (!class_exists("MendeleyPlugin")) {
 			$this->initializeDatabase();
 			load_plugin_textdomain('wp-mendeley');
 		}
+		// the parameter url is the local url ...
 		function sendAuthorizedRequest($url) {
 			$this->getOptions();
-			
-			$request = OAuthRequest::from_consumer_and_token($this->consumer, $this->acctoken, 'GET', $url, array());
-			$request->sign_request($this->sign_method, $this->consumer, $this->acctoken);
+			$access_token = $this->settings['oauth2_access_token'];
+			if (strlen($access_token)<1) {
+			   // check if there is an access token for OAuth1 available
+			   // will be removed after May 2014
+			   $acc_token = $this->settings['access_token'];
+ 			   if (strlen("$acc_token")<1) {
+				echo "<p>Mendeley Plugin Error: No access token set - try to authorize against Mendeley in the backend before accessing data first.</p>";
+				return null;
+			   }
+			   $url = 'http://api.mendeley.com/oapi/' . $url;
+			   $consumer_key = $this->settings['consumer_key'];
+            		   $consumer_secret = $this->settings['consumer_secret'];
+            		   $consumer = new OAuthConsumer($consumer_key, $consumer_secret, NULL);
+			   $sign_method = new OAuthSignatureMethod_HMAC_SHA1();
+			   $acc_token_secret = $this->settings['access_token_secret'];
+			   $acctoken = new OAuthConsumer($acc_token, $acc_token_secret, NULL);
 
-			// send request
-			if ($this->settings['debug'] === 'true') {
-				echo "<p>Request: ".$request->to_url()."</p>";
-			}
-			$resp = run_curl($request->to_url(), 'GET');
-			if ($this->settings['debug'] === 'true') {
-				echo "<p>Response:</p>";
-			}
+			   $request = OAuthRequest::from_consumer_and_token($consumer, $acctoken, 'GET', $url, array());
+			   $request->sign_request($sign_method, $consumer, $acctoken);
 
+			   $resp = run_curl($request->to_url(), 'GET');
+			   
+			} else {
+			   // OAuth2
+
+			   // check if access token should be refreshed
+			   $expires_at = $this->settings['oauth2_expires_at'];
+			   if ($expires_at < time() - 100) {
+			      $callback_url = admin_url('options-general.php?page=wp-mendeley.php&access_mendeleyPluginOAuth2=true');
+			      // retrieve new authorization token
+			      $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
+			      curl_setopt($curl, CURLOPT_POST, true);
+			      curl_setopt($curl, CURLOPT_POSTFIELDS, 
+				 "grant_type=refresh_token&refresh_token=".urlencode($this->settings['oauth2_refresh_token'])."&redirect_uri=".urlencode($callback_url)
+				       );
+			      curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1);
+		 	      // basic authentication ...
+			      curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+				 "Authorization: Basic " . base64_encode($this->settings['oauth2_client_id'] . ":" . $this->settings['oauth2_client_secret'])
+				 ));
+			      $auth = curl_exec($curl);
+			      $secret = json_decode($auth);
+			      $access_token = $secret->access_token;
+			      if (strlen("$access_token")>0) {
+ 				 $this->settings['oauth2_access_token'] = $access_token;
+				 $expires_in = $secret->expires_in;
+ 				 $this->settings['oauth2_expires_at'] = time()+(integer)$expires_in;
+ 				 $this->settings['oauth2_refresh_token'] = $secret->refresh_token;
+				 update_option($this->adminOptionsName, $this->settings);
+			         if ($this->settings['debug'] === 'true') {
+				    echo "<p>Successfully refreshed access token ...</p>";
+			         }
+			      } else {
+?>
+<div class="updated"><p><strong><?php _e("Failed refreshing OAuth2 access token: $auth", "MendeleyPlugin"); ?></strong></p></div>
+<?php
+			      }
+			   }
+
+			   $url = MENDELEY_OAPI_URL . $url;
+			   $curl = curl_init($url);
+			   curl_setopt($curl, CURLOPT_HTTPHEADER, array( 'Authorization: Bearer ' . $access_token));
+			   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+
+			   // send request
+			   if ($this->settings['debug'] === 'true') {
+				echo "<p>Request: ".$url."</p>";
+			   }
+			   $resp = curl_exec($curl);
+			   if ($this->settings['debug'] === 'true') {
+				echo "<p>Response: ".$resp."</p>";
+			   }
+			}
 			$result = json_decode($resp);
 			if (!is_null($result->error)) {
 				echo "<p>Mendeley Plugin Error: " . $result->error . "</p>";
@@ -387,9 +446,9 @@ if (!class_exists("MendeleyPlugin")) {
 				// TBD: Debug Log: Using Cached Query Results
 				return $doc_ids;
 			}
-			$url = MENDELEY_OAPI_URL . "library/$type/$id/?page=0&items=10000";
+			$url = "library/$type/$id/?page=0&items=10000";
 			if ($type === "own") { 
-				$url = MENDELEY_OAPI_URL . "library/documents/authored/?page=0&items=10000";
+				$url = "library/documents/authored/?page=0&items=10000";
 			}
 			$result = $this->sendAuthorizedRequest($url);
 			$this->updateCollectionInCache($cacheid, $result);
@@ -406,9 +465,9 @@ if (!class_exists("MendeleyPlugin")) {
 			// check cache
 			$result = $this->getDocumentFromCache($docid);
 			if (!is_null($result)) return $result;
-			$url = MENDELEY_OAPI_URL . "library/documents/$docid/";
+			$url = "library/documents/$docid/";
 			if ($fromtype === "groups") {
-				$url = MENDELEY_OAPI_URL . "library/groups/$fromid/$docid/";
+				$url = "library/groups/$fromid/$docid/";
 			}
 			$result = $this->sendAuthorizedRequest($url);
 			$this->updateDocumentInCache($docid, $result);
@@ -416,23 +475,13 @@ if (!class_exists("MendeleyPlugin")) {
 		}
 		/* get the ids/names of all groups for the current user */
 		function getGroups() {
-			$url = MENDELEY_OAPI_URL . "library/groups/?items=1500";
-			$result = $this->sendAuthorizedRequest($url);
-			return $result;
-		}
-		function getSharedCollections() {
-			$url = MENDELEY_OAPI_URL . "library/groups/?items=1500";
+			$url = "library/groups/?items=1500";
 			$result = $this->sendAuthorizedRequest($url);
 			return $result;
 		}
 		/* get the ids/names of all folders for the current user */
 		function getFolders() {
-			$url = MENDELEY_OAPI_URL . "library/folders/?items=1500";
-			$result = $this->sendAuthorizedRequest($url);
-			return $result;
-		}
-		function getCollections() {
-			$url = MENDELEY_OAPI_URL . "library/folders/?items=1500";
+			$url = "library/folders/?items=1500";
 			$result = $this->sendAuthorizedRequest($url);
 			return $result;
 		}
@@ -539,10 +588,15 @@ if (!class_exists("MendeleyPlugin")) {
 				        $curl = curl_init($csl);
 					curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
                         		$csl_file = curl_exec($curl);
-					if ($csl_file !== false) {
-					  $this->updateOutputInCache($cacheid, $csl_file);
+					if (curl_getinfo($curl,CURLINFO_HTTP_CODE) > 399) {
+					   if ($csl_file !== false) {
+					      $this->updateOutputInCache($cacheid, $csl_file);
+					   } else {
+					      echo "<p>Mendeley Plugin Error: " . curl_error($curl) . "</p>";
+					   }
 					} else {
-					  echo "<p>Mendeley Plugin Error: " . curl_error($curl) . "</p>";
+					   echo "<p>Mendeley Plugin Error: " . curl_getinfo($curl,CURLINFO_HTTP_CODE) . "</p>";
+					   $csl_file = "";
 					}
 					curl_close($curl);
 				}
@@ -816,7 +870,6 @@ if (!class_exists("MendeleyPlugin")) {
 			return $tmps;
 		}
 
-
 		/* create database tables for the caching functionality */
 		/* database fields:
 		     type = 0 (document), 1 (folder), 2 (group), 10 (output)
@@ -961,12 +1014,9 @@ if (!class_exists("MendeleyPlugin")) {
 				'cache_collections' => 'week',
 				'cache_docs' => 'week',
 				'cache_output' => 'day',
-				'consumer_key' => '',
-				'consumer_secret' => '',
-				'req_token' => '',
-				'req_token_secret' => '',
-				'access_token' => '',
-				'access_token_secret' => '',
+				'oauth2_client_id' => '',
+				'oauth2_client_secret' => '',
+				'oauth2_access_token' => '',
 				'version' => PLUGIN_VERSION,
 				'db_version' => 0 );
 			$tmpoptions = get_option($this->adminOptionsName);
@@ -974,16 +1024,7 @@ if (!class_exists("MendeleyPlugin")) {
 				foreach ($tmpoptions as $key => $option)
 					$this->settings[$key] = $option;
 			}
-			update_option($this->adminOptionsName, $this->settings);
-			// initialize some variables
-			$consumer_key = $this->settings['consumer_key'];
-            		$consumer_secret = $this->settings['consumer_secret'];
-            		$this->consumer = new OAuthConsumer($consumer_key, $consumer_secret, NULL);
-			$this->sign_method = new OAuthSignatureMethod_HMAC_SHA1();
-			$acc_token = $this->settings['access_token'];
-			$acc_token_secret = $this->settings['access_token_secret'];
-			$this->acctoken = new OAuthConsumer($acc_token, $acc_token_secret, NULL);
-			
+			update_option($this->adminOptionsName, $this->settings);			
 			return $this->settings;
 		}
 		
@@ -1028,6 +1069,7 @@ if (!class_exists("MendeleyPlugin")) {
 		 */
 		function printAdminPage() {
 			$this->getOptions();
+			$callback_url = admin_url('options-general.php?page=wp-mendeley.php&access_mendeleyPluginOAuth2=true');
 			// check if any form data has been submitted and process it
 			if (isset($_POST['update_mendeleyPlugin'])) {
 				if (isset($_POST['debug'])) {
@@ -1042,11 +1084,11 @@ if (!class_exists("MendeleyPlugin")) {
 				if (isset($_POST['cacheOutput'])) {
 					$this->settings['cache_output'] = $_POST['cacheOutput'];
 				}
-				if (isset($_POST['consumerKey'])) {
-					$this->settings['consumer_key'] = $_POST['consumerKey'];
+				if (isset($_POST['oauth2ClientId'])) {
+					$this->settings['oauth2_client_id'] = $_POST['oauth2ClientId'];
 				}
-				if (isset($_POST['consumerSecret'])) {
-					$this->settings['consumer_secret'] = $_POST['consumerSecret'];
+				if (isset($_POST['oauth2ClientSecret'])) {
+					$this->settings['oauth2_client_secret'] = $_POST['oauth2ClientSecret'];
 				}
 				if (isset($_POST['detailUrl'])) {
                                         $this->settings['detail_url'] = $_POST['detailUrl'];
@@ -1059,68 +1101,95 @@ if (!class_exists("MendeleyPlugin")) {
 <div class="updated"><p><strong><?php _e("Settings updated.", "MendeleyPlugin"); ?></strong></p></div>
 <?php
 			}
-			// check if we should start a request_token, authorize request
-			if (isset($_POST['request_mendeleyPlugin'])) {
-				if (isset($_POST['consumerKey'])) {
-					$this->settings['consumer_key'] = $_POST['consumerKey'];
+			if (isset($_POST['request_mendeleyPluginOAuth2'])) {
+				if (isset($_POST['oauth2ClientId'])) {
+					$this->settings['oauth2_client_id'] = $_POST['oauth2ClientId'];
 				}
-				if (isset($_POST['consumerSecret'])) {
-					$this->settings['consumer_secret'] = $_POST['consumerSecret'];
+				if (isset($_POST['oauth2ClientSecret'])) {
+					$this->settings['oauth2_client_secret'] = $_POST['oauth2ClientSecret'];
 				}
 				update_option($this->adminOptionsName, $this->settings);
-				$consumer_key = $this->settings['consumer_key'];
-                		$consumer_secret = $this->settings['consumer_secret'];
-                		$this->consumer = new OAuthConsumer($consumer_key, $consumer_secret, NULL);
 
-				// sign request and get request token
-				$params = array();
-				$req_req = OAuthRequest::from_consumer_and_token($this->consumer, NULL, "GET", REQUEST_TOKEN_ENDPOINT, $params);
-				$req_req->sign_request($this->sign_method, $this->consumer, NULL);
-				$request_ret = run_curl($req_req->to_url(), 'GET');
-
-				// if fetching request token was successful we should have oauth_token and oauth_token_secret
-				$token = array();
-				parse_str($request_ret, $token);
-				$oauth_token = $token['oauth_token'];
-				$this->settings['req_token'] = $token['oauth_token'];
-				$this->settings['req_token_secret'] = $token['oauth_token_secret'];
-				update_option($this->adminOptionsName, $this->settings);
-
-				$domain = $_SERVER['HTTP_HOST'];
-				$uri = $_SERVER["REQUEST_URI"];
-				$callback_url = "http://$domain$uri&access_mendeleyPlugin=true";
-				$auth_url = AUTHORIZE_ENDPOINT . "?oauth_token=$oauth_token&oauth_callback=".urlencode($callback_url);
+				$client_id = $this->settings['oauth2_client_id'];
+                		$client_secret = $this->settings['oauth2_client_secret'];
+				$auth_url = OAUTH2_AUTHORIZE_ENDPOINT . "?client_id=$client_id&response_type=code&scope=all&redirect_uri=".urlencode($callback_url);
 				redirect($auth_url);
 				exit;
 			}
-			// check if we should start a access_token request (callback)
-			if (isset($_GET['access_mendeleyPlugin']) &&
-				(strcmp($_GET['access_mendeleyPlugin'],'true')==0)) {
-		
-				$req_token = $this->settings['req_token'];
-				$req_token_secret = $this->settings['req_token_secret'];
-				$reqtoken = new OAuthConsumer($req_token, $req_token_secret, NULL);
-
-				// exchange authenticated request token for access token
-				$params = array('oauth_verifier' => $_GET['oauth_verifier']);
-				$acc_req = OAuthRequest::from_consumer_and_token($this->consumer, $reqtoken, "GET", ACCESS_TOKEN_ENDPOINT, $params);
-				$acc_req->sign_request($this->sign_method, $this->consumer, $reqtoken);
-				$access_ret = run_curl($acc_req->to_url(), 'GET');
-
-				// if access token fetch succeeded, we should have oauth_token and oauth_token_secret
-				// parse and generate access consumer from values
-				$token = array();
-				parse_str($access_ret, $token);
-				if (isset($token['oauth_token']) && (strlen(trim($token['oauth_token']))>0)) {
-					$this->settings['access_token'] = $token['oauth_token'];
-					$this->settings['access_token_secret'] = $token['oauth_token_secret'];
-					$this->accesstoken = new OAuthConsumer($token['oauth_token'], $token['oauth_token_secret'], NULL);
-					update_option($this->adminOptionsName, $this->settings);
+			// check if we should start a access_token request (callback) (OAuth2)
+			if (isset($_GET['access_mendeleyPluginOAuth2']) &&
+				(strcmp($_GET['access_mendeleyPluginOAuth2'],'true')==0)) {
+				if (isset($_POST['error'])) {
 ?>
-<div class="updated"><p><strong><?php _e("New Access Token retrieved.", "MendeleyPlugin"); ?></strong></p></div>
+<div class="updated"><p><strong><?php _e("Failed OAuth2 authorization: ".$_POST['error'], "MendeleyPlugin"); ?></strong></p></div>
 <?php
 				}
+				if (isset($_GET['code'])) {
+				   $client_id = $this->settings['oauth2_client_id'];
+                		   $client_secret = $this->settings['oauth2_client_secret'];
+
+				   // retrieve to full authorization token
+				   $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
+				   curl_setopt($curl, CURLOPT_POST, true);
+				   curl_setopt($curl, CURLOPT_POSTFIELDS, 
+				       "grant_type=authorization_code&code=".urlencode($_GET['code'])."&client_id=".urlencode($client_id)."&client_secret=".urlencode($client_secret)."&redirect_uri=".urlencode($callback_url)
+				       );
+				   curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1);
+				   // basic authentication ...
+				   curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+				       "Authorization: Basic " . base64_encode($client_id . ":" . $client_secret)
+				       ));
+				   $auth = curl_exec($curl);
+				   $secret = json_decode($auth);
+				   $access_token = $secret->access_token;
+				   if (strlen("$access_token")>0) {
+ 				      $this->settings['oauth2_access_token'] = $access_token;
+				      $expires_in = $secret->expires_in;
+ 				      $this->settings['oauth2_expires_at'] = time()+(integer)$expires_in;
+ 				      $this->settings['oauth2_refresh_token'] = $secret->refresh_token;
+				      update_option($this->adminOptionsName, $this->settings);
+?>
+<div class="updated"><p><strong><?php _e("New OAuth2 access token retrieved.", "MendeleyPlugin"); ?></strong></p></div>
+<?php
+				   } else {
+?>
+<div class="updated"><p><strong><?php _e("Failed retrieving OAuth2 access token: $auth", "MendeleyPlugin"); ?></strong></p></div>
+<?php
+				   }
+				}
 			}
+			// refresh the access token
+			if (isset($_POST['refresh_mendeleyPluginOAuth2'])) {
+			   // retrieve new authorization token
+			   $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
+			   curl_setopt($curl, CURLOPT_POST, true);
+			   curl_setopt($curl, CURLOPT_POSTFIELDS, 
+			      "grant_type=refresh_token&refresh_token=".urlencode($this->settings['oauth2_refresh_token'])."&redirect_uri=".urlencode($callback_url)
+				       );
+			   curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1);
+		 	   // basic authentication ...
+			   curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+			      "Authorization: Basic " . base64_encode($client_id . ":" . $client_secret)
+			      ));
+			   $auth = curl_exec($curl);
+			   $secret = json_decode($auth);
+			   $access_token = $secret->access_token;
+			   if (strlen("$access_token")>0) {
+ 			      $this->settings['oauth2_access_token'] = $access_token;
+			      $expires_in = $secret->expires_in;
+ 			      $this->settings['oauth2_expires_at'] = time()+(integer)$expires_in;
+ 			      $this->settings['oauth2_refresh_token'] = $secret->refresh_token;
+			      update_option($this->adminOptionsName, $this->settings);
+?>
+<div class="updated"><p><strong><?php _e("New OAuth2 access token refreshed.", "MendeleyPlugin"); ?></strong></p></div>
+<?php
+			   } else {
+?>
+<div class="updated"><p><strong><?php _e("Failed refreshing OAuth2 access token: $auth", "MendeleyPlugin"); ?></strong></p></div>
+<?php
+			   }
+			}
+
 			// display the admin panel options
 ?>
 <div class="wrap">
@@ -1229,33 +1298,37 @@ Cache folder/group requests
 <h3>API Keys</h3>
 
 <p>The Mendeley Plugin uses the <a href="http://www.mendeley.com/oapi/methods/">Mendeley OpenAPI</a> to access
-the information from Mendeley Groups and Folders. For using this API you first need to request a Consumer Key
-and Consumer Secret from Mendeley. These values have to be entered in the following two field. To request the key
+the information from Mendeley Groups and Folders. For using this API you first need to request a Client Id and a Client Secret from Mendeley. These values have to be entered in the following two field. To request the key
 and the secret go to <a href="http://dev.mendeley.com/">http://dev.mendeley.com/</a> and register a new application.</p>
 
-<p>Mendeley API Consumer Key<br/>
-<input type="text" name="consumerKey" value="<?php echo $this->settings['consumer_key']; ?>" size="60"></input></p>
-<p>Mendeley API Consumer Secret<br/>
-<input type="text" name="consumerSecret" value="<?php echo $this->settings['consumer_secret']; ?>" size="60"></input></p>
+<p>Mendeley plugin redirection URL (to copy for your <a href="http://dev.mendeley.com/applications/register/">client id request at Mendeley</a>)<br/>
+<input type="text" readonly="readonly" name="oauth2RedirectionUrl" value="<?php echo $callback_url; ?>" size="80"></input></p>
+<p>Mendeley API Client Id<br/>
+<input type="text" name="oauth2ClientId" value="<?php echo $this->settings['oauth2_client_id']; ?>" size="60"></input></p>
+<p>Mendeley API Client Secret<br/>
+<input type="text" name="oauth2ClientSecret" value="<?php echo $this->settings['oauth2_client_secret']; ?>" size="60"></input></p>
+<p>Mendeley Access Token<br/>
+<input type="text" readonly="readonly" name="oauth2AccessToken" value="<?php echo $this->settings['oauth2_access_token']; ?>" size="80"></input><br/>
+Expires at: <?php echo date('d.m.Y H:i:s', $this->settings['oauth2_expires_at']); echo " (current time: ". date('d.m.Y H:i:s', time()).")";  ?></p>
 
 <p>Since Groups and Folders are user-specific, the plugin needs to be authorized to access this 
-information in the name of a particular user. The Mendeley API uses the OAuth protocol for doing this. 
+information in the name of a particular user. The Mendeley API uses the OAuth2 protocol for doing this. 
 When you press the button bellow, the plugin requests authorization from Mendeley. Therefore, you will be asked by
 Mendeley to log in and to authorize the request from the login. As a result an Access Token will be generated
 and stored in the plugin.</p>
 
 <div class="submit">
-<input type="submit" name="request_mendeleyPlugin" value="Request and Authorize Token">
+<input type="submit" name="request_mendeleyPluginOAuth2" value="Request and Authorize Access Token">
+<input type="submit" name="refresh_mendeleyPluginOAuth2" value="Refresh Access Token">
 </div>
 
-<p>Mendeley API Request Token<br/>
-<input type="text" readonly="readonly" name="token" value="<?php echo $this->settings['req_token']; ?>" size="60"></input></p>
-<p>Mendeley API Request Token Secret<br/>
-<input type="text" readonly="readonly" name="tokenSecret" value="<?php echo $this->settings['req_token_secret']; ?>" size="60"></input></p>
+Older access keys (OAuth1) which are still usable until May 2014:
+
 <p>Mendeley Access Token<br/>
 <input type="text" readonly="readonly" name="accessToken" value="<?php echo $this->settings['access_token']; ?>" size="60"></input></p>
 <p>Mendeley Access Token Secret<br/>
 <input type="text" readonly="readonly" name="accessTokenSecret" value="<?php echo $this->settings['access_token_secret']; ?>" size="60"></input></p>
+
 </form>
 </div>
 <?php
