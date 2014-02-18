@@ -232,6 +232,10 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 
 == Change log ==
 
+= 0.9.3 (18.2.2014)
+* bugfix concerning escape characters in OAuth2 client secrets (added stripslashes())
+* added possibility to remove/delete OAuth2 access token
+
 = 0.9.2 (18.2.2014)
 * bugfix concerning formatting via csl style files
 

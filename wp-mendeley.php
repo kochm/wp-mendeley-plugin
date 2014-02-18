@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.9.2
+Version: 0.9.3
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '0.9.2' );
+define( 'PLUGIN_VERSION' , '0.9.3' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -118,7 +118,7 @@ if (!class_exists("MendeleyPlugin")) {
 			      curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1);
 		 	      // basic authentication ...
 			      curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-				 "Authorization: Basic " . base64_encode($this->settings['oauth2_client_id'] . ":" . $this->settings['oauth2_client_secret'])
+				 "Authorization: Basic " . base64_encode($this->settings['oauth2_client_id'] . ":" . addslashes($this->settings['oauth2_client_secret']))
 				 ));
 			      $auth = curl_exec($curl);
 			      $secret = json_decode($auth);
@@ -357,7 +357,8 @@ if (!class_exists("MendeleyPlugin")) {
 			if (!isset($filter)) {
 			   return 1;
 			}
-			if (strlen("$filter")<1) {
+			$filter = print_r($filter, true); // there seem to be problems with non-string filter values
+			if (strlen($filter)<1) {
 			   return 1;
 			}
 			// parse filters
@@ -1084,7 +1085,7 @@ if (!class_exists("MendeleyPlugin")) {
 					$this->settings['oauth2_client_id'] = $_POST['oauth2ClientId'];
 				}
 				if (isset($_POST['oauth2ClientSecret'])) {
-					$this->settings['oauth2_client_secret'] = $_POST['oauth2ClientSecret'];
+					$this->settings['oauth2_client_secret'] = stripslashes($_POST['oauth2ClientSecret']);
 				}
 				if (isset($_POST['detailUrl'])) {
                                         $this->settings['detail_url'] = $_POST['detailUrl'];
@@ -1102,7 +1103,7 @@ if (!class_exists("MendeleyPlugin")) {
 					$this->settings['oauth2_client_id'] = $_POST['oauth2ClientId'];
 				}
 				if (isset($_POST['oauth2ClientSecret'])) {
-					$this->settings['oauth2_client_secret'] = $_POST['oauth2ClientSecret'];
+					$this->settings['oauth2_client_secret'] = stripslashes($_POST['oauth2ClientSecret']);
 				}
 				update_option($this->adminOptionsName, $this->settings);
 
@@ -1134,7 +1135,7 @@ if (!class_exists("MendeleyPlugin")) {
 				   // basic authentication ...
 				   curl_setopt($curl, CURLOPT_HTTPHEADER, array(
 				       "Authorization: Basic " . base64_encode($client_id . ":" . $client_secret)
-				       ));
+				       )); // do not addslashes or urlencode here!!!!
 				   $auth = curl_exec($curl);
 				   $secret = json_decode($auth);
 				   $access_token = $secret->access_token;
@@ -1154,6 +1155,14 @@ if (!class_exists("MendeleyPlugin")) {
 				   }
 				}
 			}
+			// delete the access token
+			if (isset($_POST['delete_mendeleyPluginOAuth2'])) {
+ 			      $this->settings['oauth2_access_token'] = "";
+			      update_option($this->adminOptionsName, $this->settings);
+?>
+<div class="updated"><p><strong><?php _e("OAuth2 access token deleted.", "MendeleyPlugin"); ?></strong></p></div>
+<?php
+			}
 			// refresh the access token
 			if (isset($_POST['refresh_mendeleyPluginOAuth2'])) {
 			   // retrieve new authorization token
@@ -1165,7 +1174,7 @@ if (!class_exists("MendeleyPlugin")) {
 			   curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1);
 		 	   // basic authentication ...
 			   curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-			      "Authorization: Basic " . base64_encode($client_id . ":" . $client_secret)
+			      "Authorization: Basic " . base64_encode($client_id . ":" . addslashes($client_secret))
 			      ));
 			   $auth = curl_exec($curl);
 			   $secret = json_decode($auth);
@@ -1316,6 +1325,7 @@ and stored in the plugin.</p>
 <div class="submit">
 <input type="submit" name="request_mendeleyPluginOAuth2" value="Request and Authorize Access Token">
 <input type="submit" name="refresh_mendeleyPluginOAuth2" value="Refresh Access Token">
+<input type="submit" name="delete_mendeleyPluginOAuth2" value="Delete Access Token">
 </div>
 
 Older access keys (OAuth1) which are still usable until May 2014:
