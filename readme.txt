@@ -232,8 +232,11 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 
 == Change log ==
 
+= 0.9.2 (18.2.2014)
+* bugfix concerning formatting via csl style files
+
 = 0.9.1 (15.2.2014)
-* bugfix concerning loading csl style files
+* bugfix concerning loading of csl style files
 
 = 0.9 (12.2.2014)
 * Added support for OAuth2 authentication (since the Mendeley API no longer supports OAuth1)

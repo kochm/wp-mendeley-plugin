@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.9.1
+Version: 0.9.2
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '0.9.1' );
+define( 'PLUGIN_VERSION' , '0.9.2' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -357,7 +357,7 @@ if (!class_exists("MendeleyPlugin")) {
 			if (!isset($filter)) {
 			   return 1;
 			}
-			if (strlen($filter)<1) {
+			if (strlen("$filter")<1) {
 			   return 1;
 			}
 			// parse filters
@@ -575,9 +575,6 @@ if (!class_exists("MendeleyPlugin")) {
 		*/
 		function formatDocument($doc, $csl=Null, $textonly=False) {
 			$result = '';
-			if (!$textonly) {
-                        	$result .= '<p class="wpmref" style="';
-			}
 
                         // format document with a given CSL style and the CiteProc.php
                         if ($csl != Null && class_exists("citeproc")){
@@ -602,7 +599,6 @@ if (!class_exists("MendeleyPlugin")) {
 				}
                         	$csl_object = simplexml_load_string($csl_file);
 
-                                if (!$textonly) { $result.='">'; }
                                 // stdClass for showing document
                                 $docdata = new stdClass;
                                 $docdata->type = $this->mendeleyType2CiteProcType($doc->type);
@@ -612,11 +608,9 @@ if (!class_exists("MendeleyPlugin")) {
                                 $docdata->title = $doc->title;
                                 if (isset($doc->published_in)) {
                                         $docdata->container_title = $doc->published_in;
-                                        $docdata->collection_title = $doc->published_in;
                                 }
                                 if (isset($doc->publication_outlet)) {
                                         $docdata->container_title = $doc->publication_outlet;
-                                        $docdata->collection_title = $doc->publication_outlet;
                                 }
                                 if (isset($doc->journal)) {
                                         $docdata->container_title = $doc->journal;
@@ -650,7 +644,9 @@ if (!class_exists("MendeleyPlugin")) {
                                 $result .= $cp->render($docdata,'bibliography');
 			}
                         else {
-                                if (!$textonly) { $result.='">'; }
+				if (!$textonly) {
+                        	   $result .= '<p class="wpmref">';
+				}
 				$author_arr = $doc->authors;
 				$authors = "";
 				if (is_array($author_arr)) {
@@ -752,8 +748,8 @@ if (!class_exists("MendeleyPlugin")) {
                                 	}
 				}
 				}
+			        if (!$textonly) { $result .= '</p>'; }
 			}
-			if (!$textonly) { $result .= '</p>'; }
 			return $result;
 		}
 
