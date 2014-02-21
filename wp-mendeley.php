@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.9.3
+Version: 0.9.4
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '0.9.3' );
+define( 'PLUGIN_VERSION' , '0.9.4' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -104,25 +104,32 @@ if (!class_exists("MendeleyPlugin")) {
 			   
 			} else {
 			   // OAuth2
+		  	   $client_id = $this->settings['oauth2_client_id'];
+                	   $client_secret = $this->settings['oauth2_client_secret'];
 
 			   // check if access token should be refreshed
 			   $expires_at = $this->settings['oauth2_expires_at'];
-			   if ($expires_at < time() - 100) {
+			   if ($expires_at < (time() - 100)) {
 			      $callback_url = admin_url('options-general.php?page=wp-mendeley.php&access_mendeleyPluginOAuth2=true');
 			      // retrieve new authorization token
 			      $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
 			      curl_setopt($curl, CURLOPT_POST, true);
 			      curl_setopt($curl, CURLOPT_POSTFIELDS, 
-				 "grant_type=refresh_token&refresh_token=".urlencode($this->settings['oauth2_refresh_token'])."&redirect_uri=".urlencode($callback_url)
+			      "grant_type=refresh_token&refresh_token=".urlencode($this->settings['oauth2_refresh_token'])."&client_id=".urlencode($client_id)."&client_secret=".urlencode($client_secret)."&redirect_uri=".urlencode($callback_url)
 				       );
 			      curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1);
 		 	      // basic authentication ...
 			      curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-				 "Authorization: Basic " . base64_encode($this->settings['oauth2_client_id'] . ":" . addslashes($this->settings['oauth2_client_secret']))
-				 ));
+				 "Authorization: Basic " . base64_encode($this->settings['oauth2_client_id'] . ":" . $this->settings['oauth2_client_secret'])
+				 )); // do not addslashes or urlencode here!!!!
 			      $auth = curl_exec($curl);
-			      $secret = json_decode($auth);
-			      $access_token = $secret->access_token;
+			      if (!$auth) {
+				 $auth = curl_error($curl);
+			         $access_token = nil;
+			      } else {
+			      	 $secret = json_decode($auth);
+			      	 $access_token = $secret->access_token;
+			      }
 			      if (strlen("$access_token")>0) {
  				 $this->settings['oauth2_access_token'] = $access_token;
 				 $expires_in = $secret->expires_in;
@@ -149,6 +156,9 @@ if (!class_exists("MendeleyPlugin")) {
 				echo "<p>Request: ".$url."</p>";
 			   }
 			   $resp = curl_exec($curl);
+			   if (!$resp) {
+				echo "<p>Mendeley Plugin Error: Failed accessing Mendeley API: " . curl_error($curl) . "</p>";
+			   }
 			   if ($this->settings['debug'] === 'true') {
 				echo "<p>Response: ".$resp."</p>";
 			   }
@@ -755,6 +765,7 @@ if (!class_exists("MendeleyPlugin")) {
 		}
 
 		function &mendeleyNames2CiteProcNames($names) {
+			 if (!$names) return $names;
 			foreach ($names as $rank => $name) {
 				$name->given = $name->forename;
 				$name->family = $name->surname;
@@ -1137,8 +1148,13 @@ if (!class_exists("MendeleyPlugin")) {
 				       "Authorization: Basic " . base64_encode($client_id . ":" . $client_secret)
 				       )); // do not addslashes or urlencode here!!!!
 				   $auth = curl_exec($curl);
-				   $secret = json_decode($auth);
-				   $access_token = $secret->access_token;
+				   if (!$auth) {
+				      $auth = curl_error($curl);
+				      $access_token = nil;
+				   } else {
+				      $secret = json_decode($auth);
+				      $access_token = $secret->access_token;
+				   }
 				   if (strlen("$access_token")>0) {
  				      $this->settings['oauth2_access_token'] = $access_token;
 				      $expires_in = $secret->expires_in;
@@ -1165,20 +1181,27 @@ if (!class_exists("MendeleyPlugin")) {
 			}
 			// refresh the access token
 			if (isset($_POST['refresh_mendeleyPluginOAuth2'])) {
+			   $client_id = $this->settings['oauth2_client_id'];
+                	   $client_secret = $this->settings['oauth2_client_secret'];
 			   // retrieve new authorization token
 			   $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
 			   curl_setopt($curl, CURLOPT_POST, true);
 			   curl_setopt($curl, CURLOPT_POSTFIELDS, 
-			      "grant_type=refresh_token&refresh_token=".urlencode($this->settings['oauth2_refresh_token'])."&redirect_uri=".urlencode($callback_url)
+			      "grant_type=refresh_token&refresh_token=".urlencode($this->settings['oauth2_refresh_token'])."&client_id=".urlencode($client_id)."&client_secret=".urlencode($client_secret)."&redirect_uri=".urlencode($callback_url)
 				       );
 			   curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1);
 		 	   // basic authentication ...
 			   curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-			      "Authorization: Basic " . base64_encode($client_id . ":" . addslashes($client_secret))
-			      ));
+			      "Authorization: Basic " . base64_encode($client_id . ":" . $client_secret)
+			      )); // do not addslashes or urlencode here!!!!
 			   $auth = curl_exec($curl);
-			   $secret = json_decode($auth);
-			   $access_token = $secret->access_token;
+			   if (!$auth) {
+			      $auth = curl_error($curl);
+			      $access_token = nil;
+			   } else {
+			      $secret = json_decode($auth);
+			      $access_token = $secret->access_token;
+			   }
 			   if (strlen("$access_token")>0) {
  			      $this->settings['oauth2_access_token'] = $access_token;
 			      $expires_in = $secret->expires_in;
@@ -1186,7 +1209,7 @@ if (!class_exists("MendeleyPlugin")) {
  			      $this->settings['oauth2_refresh_token'] = $secret->refresh_token;
 			      update_option($this->adminOptionsName, $this->settings);
 ?>
-<div class="updated"><p><strong><?php _e("New OAuth2 access token refreshed.", "MendeleyPlugin"); ?></strong></p></div>
+<div class="updated"><p><strong><?php _e("OAuth2 access token refreshed.", "MendeleyPlugin"); ?></strong></p></div>
 <?php
 			   } else {
 ?>

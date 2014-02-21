@@ -232,6 +232,10 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 
 == Change log ==
 
+= 0.9.4 (21.2.2014)
+* additional code for displaying error messages from CURL subsystem (regarding connecting to Mendeley API server)
+* bugfix regarding authentification of OAuth2 refresh requests
+
 = 0.9.3 (18.2.2014)
 * bugfix concerning escape characters in OAuth2 client secrets (added stripslashes())
 * added possibility to remove/delete OAuth2 access token
