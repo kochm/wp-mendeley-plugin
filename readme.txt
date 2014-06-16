@@ -3,7 +3,7 @@ Contributors: kochm
 Donate link: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
 Tags: bibliography, mendeley
 Requires at least: 2.8
-Tested up to: 3.5.1
+Tested up to: 3.9
 Stable tag: trunk
 
 Mendeley Plugin for WordPress is a plugin for displaying information from the Mendeley "shared bibliography system" in WordPress blogs.
@@ -231,6 +231,10 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 0.9.5 (16.6.2014)
+* removed support for OAuth1
+* bugfix: sortorder=desc was ignored - should work now
 
 = 0.9.4 (21.2.2014)
 * additional code for displaying error messages from CURL subsystem (regarding connecting to Mendeley API server)

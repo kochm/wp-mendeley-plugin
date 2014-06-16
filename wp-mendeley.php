@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.9.4
+Version: 0.9.5
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '0.9.4' );
+define( 'PLUGIN_VERSION' , '0.9.5' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -41,11 +41,6 @@ THE SOFTWARE.
 define( 'OAUTH2_AUTHORIZE_ENDPOINT', 'https://api-oauth2.mendeley.com/oauth/authorize' );
 define( 'OAUTH2_REQUEST_TOKEN_ENDPOINT', 'https://api-oauth2.mendeley.com/oauth/token' );
 define( 'MENDELEY_OAPI_URL', 'https://api-oauth2.mendeley.com/oapi/' );
-
-// the following import is still needed for OAuth1 support - will be removed after May 2014
-if (!class_exists("OAuthConsumer")) {
-	require_once "oauth/OAuth.php"; 
-}
 
 // JSON services for PHP4
 if (!function_exists('json_encode')) {
@@ -82,26 +77,8 @@ if (!class_exists("MendeleyPlugin")) {
 			$this->getOptions();
 			$access_token = $this->settings['oauth2_access_token'];
 			if (strlen($access_token)<1) {
-			   // check if there is an access token for OAuth1 available
-			   // will be removed after May 2014
-			   $acc_token = $this->settings['access_token'];
- 			   if (strlen("$acc_token")<1) {
-				echo "<p>Mendeley Plugin Error: No access token set - try to authorize against Mendeley in the backend before accessing data first.</p>";
-				return null;
-			   }
-			   $url = 'http://api.mendeley.com/oapi/' . $url;
-			   $consumer_key = $this->settings['consumer_key'];
-            		   $consumer_secret = $this->settings['consumer_secret'];
-            		   $consumer = new OAuthConsumer($consumer_key, $consumer_secret, NULL);
-			   $sign_method = new OAuthSignatureMethod_HMAC_SHA1();
-			   $acc_token_secret = $this->settings['access_token_secret'];
-			   $acctoken = new OAuthConsumer($acc_token, $acc_token_secret, NULL);
-
-			   $request = OAuthRequest::from_consumer_and_token($consumer, $acctoken, 'GET', $url, array());
-			   $request->sign_request($sign_method, $consumer, $acctoken);
-
-			   $resp = run_curl($request->to_url(), 'GET');
-			   
+			   echo "<p>Mendeley Plugin Error: No access token set - try to authorize against Mendeley in the backend before accessing data first.</p>";
+			   return null;
 			} else {
 			   // OAuth2
 		  	   $client_id = $this->settings['oauth2_client_id'];
@@ -514,7 +491,7 @@ if (!class_exists("MendeleyPlugin")) {
 		   i.e. $docarr holds an array of meta information arrays, after
 		   the function ran, the meta information arrays (document objects)
 		   will be grouped according to the groupby parameter. */
-		function groupDocs($docarr, $groupby, $order) {
+		function groupDocs($docarr, $groupby, $sortorder) {
 			$grpvalues = array();
 			for($i=0; $i < sizeof($docarr); $i++) {
 				$doc = $docarr[$i];
@@ -539,7 +516,7 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 			}
 
-			if (startsWith($order, "desc", false)) { 
+			if (stripos($sortorder, "desc") === false) { 
 				krsort($grpvalues);
 			}
 			else {
@@ -1136,7 +1113,7 @@ if (!class_exists("MendeleyPlugin")) {
 				   $client_id = $this->settings['oauth2_client_id'];
                 		   $client_secret = $this->settings['oauth2_client_secret'];
 
-				   // retrieve to full authorization token
+				   // retrieve full authorization token
 				   $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
 				   curl_setopt($curl, CURLOPT_POST, true);
 				   curl_setopt($curl, CURLOPT_POSTFIELDS, 
@@ -1350,13 +1327,6 @@ and stored in the plugin.</p>
 <input type="submit" name="refresh_mendeleyPluginOAuth2" value="Refresh Access Token">
 <input type="submit" name="delete_mendeleyPluginOAuth2" value="Delete Access Token">
 </div>
-
-Older access keys (OAuth1) which are still usable until May 2014:
-
-<p>Mendeley Access Token<br/>
-<input type="text" readonly="readonly" name="accessToken" value="<?php echo $this->settings['access_token']; ?>" size="60"></input></p>
-<p>Mendeley Access Token Secret<br/>
-<input type="text" readonly="readonly" name="accessTokenSecret" value="<?php echo $this->settings['access_token_secret']; ?>" size="60"></input></p>
 
 </form>
 </div>
