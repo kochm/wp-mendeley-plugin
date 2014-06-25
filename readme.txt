@@ -232,6 +232,9 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 
 == Change log ==
 
+= 0.9.6 (25.6.2014)
+* bugfix: sometimes sortorder=desc and asc were misinterpreted - should work now
+
 = 0.9.5 (16.6.2014)
 * removed support for OAuth1
 * bugfix: sortorder=desc was ignored - should work now

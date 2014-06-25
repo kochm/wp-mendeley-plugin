@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.9.5
+Version: 0.9.6
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -516,7 +516,7 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 			}
 
-			if (stripos($sortorder, "desc") === false) { 
+			if (stripos($sortorder, "asc") === false) { 
 				krsort($grpvalues);
 			}
 			else {
