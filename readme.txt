@@ -3,7 +3,7 @@ Contributors: kochm
 Donate link: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
 Tags: bibliography, mendeley
 Requires at least: 2.8
-Tested up to: 3.9
+Tested up to: 4.0
 Stable tag: trunk
 
 Mendeley Plugin for WordPress is a plugin for displaying information from the Mendeley "shared bibliography system" in WordPress blogs.
@@ -19,24 +19,48 @@ The lists can be included in posts or pages using WordPress shortcodes:
 &#91;mendeley type="folders" id="xxx" groupby="xxx"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx"&#93;
 &#91;mendeley type="groups" id="xxx" sortby="xxx" sortbyorder="xxx"&#93;
-&#91;mendeley type="groups" id="xxx" groupby="xxx"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx" filter="author=Michael Koch"&#93;
-&#91;mendeley type="groups" id="xxx" groupby="xxx" filter="author=Michael Koch;type=Book Section"&#93;
-&#91;mendeley type="documents" id="authored" groupby="year"&#93;
-&#91;mendeley type="documents" id="authored" filter="tag=perceptualorganization"&#93;
-&#91;mendeley type="documents" id="authored" sortby="authors" sortbyorder="asc" groupby="year" grouporder="desc"%#93;
-&#91;mendeley type="own"%#93;
+&#91;mendeley type="groups" id="xxx" groupby="xxx" filter="author=Michael Koch;type=journal"&#93;
+&#91;mendeley type="groups" id="xxx" groupby="xxx" filter="type=book_section"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx" csl="http://DOMAINNAME/csl/custom_style.csl"&#93;
 
-- the attribute "type" can be set to "own", "folders", "groups", "documents"
+- the attribute "type" can be set to "folders" or "groups"
 - the attribute "groupby" is optional; possible values currently are: "authors", "year"
 - the attribute "sortby" is optional; possible values currently are: "authors", "year"
 - the attributes "sortbyorder" and "groupbyorder" can have the values "asc" and "desc"
 - sorting on the sort key is done before grouping on the group key if both are provided
-- in "filter" one or more equal matches can be filtered for; if more than one filter rule is specified, than documents are displayed only when all filter rules match
-- possible attributes to filter for are: author, editor, title, year, tag, keyword, url, publication_outlet, pages, issue, volume, city, publisher, abstract (when filtering for tag or keyword, a substring search is performed, so "blog" also matches "microblog")
+- in "filter" one or more equal matches can be filtered for; if more than one filter rule is specified, than documents are displayed only when all filter rules match 
+- possible attribute names to filter for are: type, title, year, author, editor, publisher, tag, keyword, abstract (when filtering for tag or keyword, a substring search is performed, so "blog" also matches "microblog")
+- possible values for attribute type: ['journal' or 'book' or 'generic' or 'book_section' or 'conference_proceedings' or 'working_paper' or 'report' or 'web_page' or 'thesis' or 'magazine_article' or 'statute' or 'patent' or 'newspaper_article' or 'computer_program' or 'hearing' or 'television_broadcast' or 'encyclopedia_article' or 'case' or 'film' or 'bill']
 - the attribute "csl" is optional; the value must contain a valid URL with a .csl file
 </pre>
+
+<h3>Changes in v1.0</h3>
+
+In v1.0 of the plugin there are some important changes due to support
+for the new Mendeley API.
+
+The most important issue is that ids of groups and folders now have to
+be uuids - so, you have to look up the ids again - e.g. using the list
+feature in the settings page of the plugin in the Wordpress backend.
+
+Additionally, some attribute names and possible values have been
+changed - so for example filters for type have to be changed.
+
+We now also no longer support the outdated collection types "shared",
+"sharedcollections", "collections" - Only "groups" and "folders" are
+supported.
+
+<h3>Known Problems</h3>
+
+The current version of the plugin (v1.0) has one known problem with
+requesting and authorizing access tokens: When the activity is
+triggered in the backend using the Safari browser, the redirection to
+the Mendeley API site might not work (blank page) - If this is the
+case for you, please try with a different browser. For us Firefox has
+always worked.
+
+<h3>Formatting</h3>
 
 If you do not specify a CSL stylesheet, full entries are formatted the following way - so, the style can be tailored using CSS. 
 <pre>
@@ -100,9 +124,10 @@ The output in the widgets is formatted the following way:
 	&lt;/ul&gt;
 </pre>
 
-The title will additionally be equipped with a div-tag including the full reference in the 
-title attribute - which will in most browsers display the full reference when you are
-hoovering over the title with the mouse pointer.
+The title will additionally be equipped with a div-tag including the
+full reference in the title attribute - which will in most browsers
+display the full reference when you are hoovering over the title with
+the mouse pointer.
 
 You can use the plugin in non widgetized themes, just try
 <pre>
@@ -117,22 +142,24 @@ and authorize the API. To do so the following steps have to be taken:
 <li> activate plugin
 <li> get Customer Key and Customer Secret from http://dev.mendeley.com/
 <li> enter the information in the wp-mendeley tab in the backend
-<li> press "Get Access Key" on the wp-mendeley configuration page
-<li> then you are redirected to the Mendeley web site to authorize the request, and redirected back to the blog
+<li> press "Get Access Key" on the wp-mendeley configuration page 
+<li> then you are redirected to the Mendeley web site to authorize the request, and redirected back to the blog (see Known Problems when this step does not work)
 <li> now you can use shortcodes in your pages and blogs
 </ol> 
 
 <h3>Details presentation</h3>
 
-The document lists in the widgets only include the title of the document and a link.
-Per default the link is either the url attribute of the document - or if not set a
-link to the doi attribute in the document if set.
+The document lists in the widgets only include the title of the
+document and a link.  Per default the link is either the url attribute
+of the document - or if not set a link to the doi attribute in the
+document if set.
 
-To present more details for those list entries without leaving the web site beginning
-in version 0.8.1 you have two options:
+To present more details for those list entries without leaving the web
+site beginning in Version 0.8.1 you have two options:
 
-1) if enabled in the configuration, the list items will include mouseover tooltips showing
-the full reference - this can be constructed in a simple default way or using CSL stylesheets.
+1) if enabled in the configuration, the list items will include
+mouseover tooltips showing the full reference - this can be
+constructed in a simple default way or using CSL stylesheets.
 
 2) if a details url is set in the configuration, all list items are linked to
       $DETAILSURL?docid=XXXX
@@ -146,49 +173,85 @@ You can create a details page on your Wordpress installation in the following wa
   looks for the file "mendeley-details-template.tpl" in the plugin directory
   and interprets the content of this file in the same way
 
-In addition to all attributes returned from Mendeley (abstract, authors, doi, 
-editors, translators, categories, identifiers, issue, keywords, mendeley_url, 
-pages, producers, publication_outlet, published_in, tags, title, type, url, uuid, 
-volume, year - also see the Mendeley API documentation at
-http://apidocs.mendeley.com/home/public-resources/search-details) you can use the 
-special attribute "full_reference" to insert a full reference. The attribute can
-be annotated with a CSL url to do the formatting according to a CSL stylesheet:
+In addition to all attributes returned from Mendeley (abstract,
+authors, doi, editors, translators, categories, identifiers, issue,
+keywords, mendeley_url, pages, producers, publication_outlet,
+published_in, tags, title, type, url, uuid, volume, year - also see
+the Mendeley API documentation at
+http://apidocs.mendeley.com/home/public-resources/search-details) you
+can use the special attribute "full_reference" to insert a full
+reference. The attribute can be annotated with a CSL url to do the
+formatting according to a CSL stylesheet:
 {full_reference,http://site/url.csl}
 
 <h3>JSON data source</h3>
 
-In version 0.7 we added the functionality to create a JSON data source - e.g. to be used as data source in Exhibit/Simile application.
+In version 0.7 we added the functionality to create a JSON data source
+- e.g. to be used as data source in Exhibit/Simile application.
 
-For example the page http://www.kooperationssysteme.de/pub/cscm/ uses such a data source in an interactive JavaScript application to search the references.
+For example the page http://www.kooperationssysteme.de/pub/cscm/ uses
+such a data source in an interactive JavaScript application to search
+the references.
 
 The following line is used in the Exhibit/Simile application:
 
 <link href="/index.php?mendeley_action=export-json&id=763&type=groups" type="application/json" rel="exhibit/data" />
  
-In the directory examples you find a file bibexhibit.tpl.php that can be placed in your Wordpress theme directory. Then you can create a new page with the Template BibExhibit that will show the application with the data source.
+In the directory examples you find a file bibexhibit.tpl.php that can
+be placed in your Wordpress theme directory. Then you can create a new
+page with the Template BibExhibit that will show the application with
+the data source.
 
 <h3>CSL integration</h3>
 
 When you specify a CSL (citation style language) stylesheet via the csl parameter, 
 the formatting specified in the stylesheet is used to generate details.
 
-A .csl file must be a XML formatted file, containing the style tags defined by the citation Style language. 
-For further information of CSL you should visit the citationstyles.org website. If you want to use an existing 
-CSL style, you should browse the zotero style repository on zotero.org/styles. For creating your own CSL file, 
-you can either write an XML-file or use a visual editor e.g. editor.citationstyles.org/visualEditor/.
+A .csl file must be a XML formatted file, containing the style tags
+defined by the citation Style language.  For further information of
+CSL you should visit the citationstyles.org website. If you want to
+use an existing CSL style, you should browse the zotero style
+repository on zotero.org/styles. For creating your own CSL file, you
+can either write an XML-file or use a visual editor
+e.g. editor.citationstyles.org/visualEditor/.
 
-We include some CSL files in the sub directory "style" - So, an easy way to try the functionality
-could be to link to one of those files - e.g. by an URL like the following:
+We include some CSL files in the sub directory "style" - So, an easy
+way to try the functionality could be to link to one of those files -
+e.g. by an URL like the following:
 http://YOURDOMAIN/wp-content/plugins/mendeleyplugin/style/apa.csl
 
-For formatting entries via CLS, we are relying on the CiteProc.php formatting engine by Ron Jerome, 
-which usually is included in the plugins distribution. (See https://bitbucket.org/rjerome/citeproc-php
+For formatting entries via CLS, we are relying on the CiteProc.php
+formatting engine by Ron Jerome, which usually is included in the
+plugins distribution. (See https://bitbucket.org/rjerome/citeproc-php
 for the original project.)
 
-The library includes locale-files for adapting the output to different languages.
-We have only included the DE and EN locales here. Please load additional locales from
-https://bitbucket.org/rjerome/citeproc-php/src/ and add them in the locale folder
-in the plugin folder.
+The library includes locale-files for adapting the output to different
+languages.  We have only included the DE and EN locales here. Please
+load additional locales from
+https://bitbucket.org/rjerome/citeproc-php/src/ and add them in the
+locale folder in the plugin folder.
+
+<h3>Source Code Documentation</h3>
+
+The source code of the plugin is more or less documented. Here some
+information about the overall structure:
+
+The main function of the plugin is "formatCollection". This function
+is called from different places in order to create a formatted list of
+references. In this function
+<ul>
+<li>first the output cache ist checked (getOutputFromCache) - in this cache completely formatted outputs for queries are stored
+<li>then the list of documents is retrieved from Mendeley - depending on the type of collection (group or folder) - either by getDocumentListForFolder() oder getDocumentsForGroup()
+<li>and then the documents are sorted and grouped according to the request (groupDocs)
+<li>finally (in the loop producing the output) filter parameters are checked (checkFilter)
+<li>the output for single references is produced using the functions formatDocumentShort() and formatDocument()
+</ul>
+
+The following Mendeley API calls are used
+<ul>
+<li>retrieving document list from a group: /documents?group_id=GROUPID
+<li>retrieving document list from a folder: /folders/FOLDERID/documents; Iterate /documents/DOCID
+</ul>
 
 <h3>Thanks ...</h3>
 
@@ -231,6 +294,9 @@ The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin
 == Screenshots ==
 
 == Change log ==
+
+= 1.0.0 (10.12.2014)
+* major migration to new Mendeley API
 
 = 0.9.6 (25.6.2014)
 * bugfix: sometimes sortorder=desc and asc were misinterpreted - should work now

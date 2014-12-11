@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 0.9.6
+Version: 1.0.0
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '0.9.5' );
+define( 'PLUGIN_VERSION' , '1.0.0' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -37,10 +37,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-// OAuth2 (since v0.9)
-define( 'OAUTH2_AUTHORIZE_ENDPOINT', 'https://api-oauth2.mendeley.com/oauth/authorize' );
-define( 'OAUTH2_REQUEST_TOKEN_ENDPOINT', 'https://api-oauth2.mendeley.com/oauth/token' );
-define( 'MENDELEY_OAPI_URL', 'https://api-oauth2.mendeley.com/oapi/' );
+define( 'MENDELEY_API_URL', 'https://api.mendeley.com/' );
+define( 'OAUTH2_AUTHORIZE_ENDPOINT', 'https://api.mendeley.com/oauth/authorize' );
+define( 'OAUTH2_REQUEST_TOKEN_ENDPOINT', 'https://api.mendeley.com/oauth/token' );
 
 // JSON services for PHP4
 if (!function_exists('json_encode')) {
@@ -72,8 +71,14 @@ if (!class_exists("MendeleyPlugin")) {
 			$this->initializeDatabase();
 			load_plugin_textdomain('wp-mendeley');
 		}
-		// the parameter url is the local url ...
+
+		// send an authorized / authenticated request to the Mendeley API
+		// the result (JSON) will be decoded and returned as result parameter
+		// if there is an error on the way, null will be returned (and an error massage will be written to stdout)
+		// HTTP-Headers will be stored in $headers (to allow processing pagination)
 		function sendAuthorizedRequest($url) {
+			global $headers;
+			$headers = array();
 			$this->getOptions();
 			$access_token = $this->settings['oauth2_access_token'];
 			if (strlen($access_token)<1) {
@@ -123,10 +128,14 @@ if (!class_exists("MendeleyPlugin")) {
 			      }
 			   }
 
-			   $url = MENDELEY_OAPI_URL . $url;
+			   if (!(strpos($url, MENDELEY_API_URL) === 0)) {
+			      $url = MENDELEY_API_URL . $url;
+			   }
 			   $curl = curl_init($url);
 			   curl_setopt($curl, CURLOPT_HTTPHEADER, array( 'Authorization: Bearer ' . $access_token));
 			   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+			   curl_setopt($curl, CURLOPT_VERBOSE, true);
+			   curl_setopt($curl, CURLOPT_HEADER, true);
 
 			   // send request
 			   if ($this->settings['debug'] === 'true') {
@@ -139,19 +148,45 @@ if (!class_exists("MendeleyPlugin")) {
 			   if ($this->settings['debug'] === 'true') {
 				echo "<p>Response: ".$resp."</p>";
 			   }
+			   $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
+			   $header = substr($resp, 0, $header_size);
+			   $body = substr($resp, $header_size);
+			   // parse headers
+			   foreach (explode("\r\n", $header) as $i => $line) {
+			       if ($i === 0) {
+                	           $headers['http_code'] = $line;
+			       } else {
+			           list ($key, $value) = explode(': ', $line);
+				   if ($key === "Link") {
+				        $pos1 = strpos($value, "rel=");
+				        if ($pos1) {
+					    $pos2 = strpos($value, "\"", $pos1+6);
+					    $tmps = substr($value, $pos1+5, $pos2-$pos1-5);
+					    $key = $key . "-" . $tmps;
+        				} 
+				        $pos1 = strpos($value, "<");
+				        $pos2 = strpos($value, ">");
+					$tmps = substr($value, $pos1+1, $pos2-$pos1-1);
+					$value = $tmps;
+				   }
+				   $headers[$key] = $value;
+            		       }
+			   }
 			}
-			$result = json_decode($resp);
+			$result = json_decode($body);
 			if (!is_null($result->error)) {
-				echo "<p>Mendeley Plugin Error: " . $result->error . "</p>";
+				echo "<p>Mendeley Plugin Error: Got return code " . $result->error . " when trying to access Mendeley API</p>";
 				$error_message = $result->error;
 			}
 			return $result;
 		}
 		
+		// shortcode for displaying a list of references (documents)
 		function processShortcodeList($attrs = null) {
 			return $this->formatCollection($attrs);
 		}
 
+		// shortcode for displaying details for a particular reference (document)
 		function processShortcodeDetails($attrs = null, $content = null) {
 			$docid = $_GET["docid"];
 			if (!$docid) {
@@ -159,7 +194,7 @@ if (!class_exists("MendeleyPlugin")) {
 			}
 			if (!$content) {
 				$templatefile = __DIR__.'/mendeley-details-template.tpl';
-				if(file_exists($path2template)){
+				if(file_exists($templatefile)){
                                 	$content = file_get_contents($templatefile);
                         	}
                         	else {
@@ -180,6 +215,24 @@ if (!class_exists("MendeleyPlugin")) {
 					$tmparr = explode(",", $token, 2);
 					$token = $tmparr[0];
 					switch(strtolower($token)) {
+						case 'authors':
+                        		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
+						        break;
+						case 'editors':
+                        		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
+						        break;
+						case 'mendeley_url':
+                        		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
+						        break;
+						case 'url':
+                        		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
+						        break;
+						case 'doi':
+                        		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
+						        break;
+						case 'isbn':
+                        		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
+						        break;
 						case 'full_reference':
 							if (sizeof($tmparr)>1) {
 								$tmps = $this->formatDocument($doc, $tmparr[1]);
@@ -194,6 +247,7 @@ if (!class_exists("MendeleyPlugin")) {
                         $content = preg_replace('/\{([^\s]*)\}/', '', $content);
 			return '<span>' . $content . '</span>';
 		}
+
 		protected function detailsFormat($doc, $token) {
 			switch(strtolower($token)) {
 				case 'authors':
@@ -209,26 +263,45 @@ if (!class_exists("MendeleyPlugin")) {
 				case 'keywords':
 					return implode(', ', array_map("detailsFormatMap2", $doc->$token));
 					break;
+				case 'doi' :
+				        return $doc->identifiers->doi;
+					break;
+				case 'url' :
+				        return $doc->websites[0];
+					break;
+				case 'mendeley_url' :
+				        return "http://www.mendeley.com/research/".$doc->id."/";
+					break;
 				default:
 					return $doc->$token;
 			}
 		}
 		
-		// format a set of references (folders, groups, documents)
-		/* type = 'own' for own publications */
+		/* This is the main function in the plugin - creating a formatted list of references
+		   input parameters are:
+		   - attrs: different attribute specifying what should be included in the list
+  		     - type = "folders", "groups"
+		     - id = UUID
+		     - groupby
+		     - grouporder = "desc", "asc"
+		     - sortyby
+		     - sortorder
+		     - csl
+		     - filter
+		     - maxdocs
+		   - maxdocs: a maximum number of references to be included in the list or 0 if there is no maximum
+		   - style: the style to format the references - possible values are "standard" and "shortlist"; only "standard" will interpret attribute "csl"
+		*/
 		function formatCollection($attrs = NULL, $maxdocs = 0, $style="standard") {
 			$type = $attrs['type'];
 			if (empty($type)) { $type = "folders"; }
-			if (strlen($type)<1) { $type = "folders"; }
-			// for upwards compatibility
-			if ($type === "shared") { $type = "groups"; } 
-			if ($type === "sharedcollections") { $type = "groups"; }
-			if ($type === "collections") { $type = "folders"; }
-			if ($type === "sharedcollection") { $type = "groups"; }
-			if ($type === "collection") { $type = "folders"; }
 			// map singular cases to plural
 			if ($type === "folder") { $type = "folders"; }
 			if ($type === "group") { $type = "groups"; }
+			// map illegal types to "groups"
+			if (!(($type === "groups") OR ($type === "folders"))) {
+			   $type = "groups";
+			}
 			$id = $attrs['id'];
 			if (empty($id)) { $id = 0; }
 			$groupby = $attrs['groupby'];
@@ -273,18 +346,23 @@ if (!class_exists("MendeleyPlugin")) {
 			}
 			$cacheresult = "";
 
-			// type can be own, folders, groups, documents
-			$res = $this->getItemsByType($type, $id);
-			// process the data
-			$docarr = $this->loadDocs($res, $type, $id);
+			// type can be folders or groups
+			if ($type === 'groups') {
+			   $docarr = $this->getDocumentsForGroup($id);
+			} else { // 'folders'
+			   $res = $this->getDocumentListForFolder($id);
+			   // now get the document data
+			   $docarr = $this->getDocuments($res);
+			}
+
+			// and now sort and/or group the documents
 			if (isset($sortby)) {
-				$docarr = $this->groupDocs($docarr, $sortby, $sortorder);
+			   $docarr = $this->groupDocuments($docarr, $sortby, $sortorder);
 			}
 			if (isset($groupby)) {
-				$docarr = $this->groupDocs($docarr, $groupby, $grouporder);
-			}
-			$currentgroupbyval = "";
-			$groupbyval = "";
+			   $docarr = $this->groupDocuments($docarr, $groupby, $grouporder);
+			} 
+
 			if ($this->settings['debug'] === 'true') {
 				$result .= "<p>Mendeley Plugin: Unfiltered results count: " . count($docarr) . " ($error_message)</p>";
 			} else {
@@ -293,7 +371,12 @@ if (!class_exists("MendeleyPlugin")) {
 					$error_message = "";
 				}
 			}
+
+			// process all refrerences in document array (list of results) 
+			// - apply filter if specified and print groupby headings if needed
 			$countfiltered = 0;
+			$currentgroupbyval = "";
+			$groupbyval = "";
 			foreach($docarr as $doc) {
 				// check filter
 				if (!is_null($filter)) {
@@ -421,93 +504,130 @@ if (!class_exists("MendeleyPlugin")) {
 		}
 
 		
-		// One function handles own, documents, groups, folders, ...
-		/* get the ids of all documents in a Mendeley collection
+		/* get the information for all documents in a Mendeley group
 		   and return them in an array */
-		function getItemsByType($type,$id) {
+		function getDocumentsForGroup($id) {
+			global $headers; // headers from sendAuthorizedRequest()
 			if (is_null($id)) return NULL;
 			// check cache
-			$cacheid="library-$type-$id";
-			$result = $this->getCollectionFromCache($cacheid);
+			$cacheid="documents-group-$id";
+			$docarr = $this->getDocumentListFromCache($cacheid);
 			if (!is_null($result)) {
-				$doc_ids = $result->document_ids;
-				// TBD: Debug Log: Using Cached Query Results
-				return $doc_ids;
+				return $docarr;
 			}
-			$url = "library/$type/$id/?page=0&items=10000";
-			if ($type === "own") { 
-				$url = "library/documents/authored/?page=0&items=10000";
+
+			$request_count = 500;
+			$url = "documents?group_id=$id&view=all&order=desc&sort=created&limit=$request_count";
+			$docarr = $this->sendAuthorizedRequest($url);
+			$mendeley_count = 0 + $headers["Mendeley-Count"];
+			if ($mendeley_count > $request_count) { // pagination ...
+  			    $url = $headers["Link-next"];
+			    while ($url) {
+			        $docarradd = $this->sendAuthorizedRequest($url);
+				$docarr = array_merge($docarr, $docarradd);
+  			        $url = $headers["Link-next"];
+			    }
 			}
-			$result = $this->sendAuthorizedRequest($url);
-			$this->updateCollectionInCache($cacheid, $result);
-			$doc_ids = $result->document_ids;
-			if (is_null($result->document_ids)) {
-				$doc_ids = array(0 => $result->id);
+
+			// update cache
+			$this->updateDocumentListInCache($cacheid, $docarr);
+			return $docarr;
+		}
+
+
+		/* get the ids of all documents in a Mendeley folder
+		   and return them in an array */
+		function getDocumentListForFolder($id) {
+			if (is_null($id)) return NULL;
+			// check cache
+			$cacheid="doclist-folder-$id";
+			$docids = $this->getDocumentListFromCache($cacheid);
+			if (!is_null($docids)) {
+				return $docids;
 			}
-			return $doc_ids;
+
+			$request_count = 500;
+			$url = "folders/$id/documents?items=$request_count";
+			$docids = $this->sendAuthorizedRequest($url);
+			if (is_null($docids)) {
+				$docids = array(0 => $result->id);
+			}
+			$mendeley_count = 0 + $headers["Mendeley-Count"];
+			if ($mendeley_count > $request_count) { // pagination ...
+  			    $url = $headers["Link-next"];
+			    while ($url) {
+			        $docidsadd = $this->sendAuthorizedRequest($url);
+				if ($docidsadd) {
+				    $docids = array_merge($docids, $docidsadd);
+  			            $url = $headers["Link-next"];
+				} else { $url = null; }
+			    }
+			}
+
+			$this->updateDocumentListInCache($cacheid, $docids);
+			return $docids;
 		}
 		
 		/* get all attributes (array) for a given document */
-		function getDocument($docid, $fromtype=null, $fromid=null) {
+		function getDocument($docid) {
 			if (is_null($docid)) return NULL;
 			// check cache
 			$result = $this->getDocumentFromCache($docid);
 			if (!is_null($result)) return $result;
-			$url = "library/documents/$docid/";
-			if ($fromtype === "groups") {
-				$url = "library/groups/$fromid/$docid/";
-			}
+			$url = "documents/$docid?view=all";
 			$result = $this->sendAuthorizedRequest($url);
 			$this->updateDocumentInCache($docid, $result);
 			return $result;
 		}
 		/* get the ids/names of all groups for the current user */
 		function getGroups() {
-			$url = "library/groups/?items=1500";
+			$url = "groups/?limit=500"; // 500 is the maximum possible
 			$result = $this->sendAuthorizedRequest($url);
 			return $result;
 		}
 		/* get the ids/names of all folders for the current user */
 		function getFolders() {
-			$url = "library/folders/?items=1500";
+			$url = "folders/?limits=500"; // 500 is the maximum possible
 			$result = $this->sendAuthorizedRequest($url);
 			return $result;
 		}
 
 		/* get the meta information (array) for all document ids in
 		   the array given as an input parameter */
-		function loadDocs($docidarr, $fromtype=null, $fromid=null, $count=0) {
+		function getDocuments($docidarr, $count=0) {
 			$res = array();
 			if ($count == 0) { $count = sizeof($docidarr); }
 			for($i=0; $i < $count; $i++) {
-				$docid = $docidarr[$i];
-				$doc = $this->getDocument($docid, $fromtype, $fromid);
+				$docid = $docidarr[$i]->id;
+				$doc = $this->getDocument($docid);
 				$res[] = $doc;
 			}
 			return $res;
 		}
 		
-		/* sort and group the documents that have been loaded before using loadDocs,
+		/* sort and group the documents that have been loaded using loadDocumentData,
 		   i.e. $docarr holds an array of meta information arrays, after
 		   the function ran, the meta information arrays (document objects)
 		   will be grouped according to the groupby parameter. */
-		function groupDocs($docarr, $groupby, $sortorder) {
+		function groupDocuments($docarr, $groupby, $sortorder) {
 			$grpvalues = array();
 			for($i=0; $i < sizeof($docarr); $i++) {
 				$doc = $docarr[$i];
 				if (isset($doc->$groupby)) {
 					$grpval = $doc->$groupby;
 					// If array (like authors, take the first one)
-					if (is_array($grpval)) {
+					if (isset($grpval)) {
+					    if (is_array($grpval)) {
 						if (is_object($grpval[0])) {
 							if (isset($grpval[0]->surname)) {
 								$grpval = $grpval[0]->surname . $grpval[0]->forename;
 							} else {
-								$grpval = strval($grpval[0]);
+								$grpval = strval(print_r($grpval[0], true));
 							}
 						} else {
 							$grpval = strval($grpval[0]);
 						}
+					    }
 					}
 				}
 				if (isset($grpval)) {
@@ -536,30 +656,35 @@ if (!class_exists("MendeleyPlugin")) {
 		/* - csl is an optional URL pointing to a Citation Stylesheet Language stylesheet
 		   - textonly = True will result in output without HTML formatting */
 		/* the following attributes are available in the doc object
-			type (Book Section, Conference Proceedings, Journal Article, Report, Book, Encyclopedia Article, ...)
+			type  ['journal' or 'book' or 'generic' or 'book_section' or 'conference_proceedings' or 'working_paper' or 'report' or 'web_page' or 'thesis' or 'magazine_article' or 'statute' or 'patent' or 'newspaper_article' or 'computer_program' or 'hearing' or 'television_broadcast' or 'encyclopedia_article' or 'case' or 'film' or 'bill']
 			title
+			month
 			year
+			created
 			authors*
 			editors*
-			tags*
-			keywords*
-			identifiers* (issn,...)
-			url
-			doi
-			discipline*
-			subdiscipline
-			publication_outlet
-			published_in
-			pages
+			source
 			issue
 			volume
 			city
 			publisher
 			abstract
+			pages
+			tags*
+			keywords*
+			identifiers* (issn,...)
+			websites*
+			institution
+			city
+			edition
+			series_editor
+			translators*
+			country
+			genre			
+			publisher
+			series
+			chapter
 			id
-			mendeley_url
-			canonical_id
-			files
 		*/
 		function formatDocument($doc, $csl=Null, $textonly=False) {
 			$result = '';
@@ -577,10 +702,10 @@ if (!class_exists("MendeleyPlugin")) {
 					   if ($csl_file !== false) {
 					      $this->updateOutputInCache($cacheid, $csl_file);
 					   } else {
-					      echo "<p>Mendeley Plugin Error: " . curl_error($curl) . "</p>";
+					      echo "<p>Mendeley Plugin Error: Failed accessing Menedley API: " . curl_error($curl) . "</p>";
 					   }
 					} else {
-					   echo "<p>Mendeley Plugin Error: " . curl_getinfo($curl,CURLINFO_HTTP_CODE) . "</p>";
+					   echo "<p>Mendeley Plugin Error: Failed accessing Mendeley API: " . curl_getinfo($curl,CURLINFO_HTTP_CODE) . "</p>";
 					   $csl_file = "";
 					}
 					curl_close($curl);
@@ -597,11 +722,8 @@ if (!class_exists("MendeleyPlugin")) {
                                 if (isset($doc->published_in)) {
                                         $docdata->container_title = $doc->published_in;
                                 }
-                                if (isset($doc->publication_outlet)) {
-                                        $docdata->container_title = $doc->publication_outlet;
-                                }
-                                if (isset($doc->journal)) {
-                                        $docdata->container_title = $doc->journal;
+                                if (isset($doc->source)) {
+                                        $docdata->container_title = $doc->source;
                                 }
                                 if (isset($doc->volume)) {
                                         $docdata->volume = $doc->volume;
@@ -618,14 +740,9 @@ if (!class_exists("MendeleyPlugin")) {
                                 if (isset($doc->city)) {
                                         $docdata->publisher_place = $doc->city;
 				}
-                                if (isset($doc->url)) {
-                                        $docdata->URL = $doc->url;
-				}
-                                if (isset($doc->doi)) {
-                                        $docdata->DOI = $doc->doi;
-				}
-                                if (isset($doc->isbn)) {
-                                        $docdata->ISBN = $doc->isbn;
+                                if (isset($doc->identifiers)) {
+                                        $docdata->DOI = $doc->identifiers->doi;
+                                        $docdata->ISBN = $doc->identifiers->isbn;
 				}
                                 // execute citeproc with new stdClass
                                 $cp = new citeproc($csl_file);
@@ -653,8 +770,8 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 				if ($textonly) {
 				$result .= $authors . ' (' . $doc->year . '): ' . $doc->title;
-				if (isset($doc->publication_outlet)) {
-					$result .= ', ' . $doc->publication_outlet;
+				if (isset($doc->source)) {
+					$result .= ', ' . $doc->source;
 				}
 				if (isset($doc->volume)) {
 					$result .= ' ' . $doc->volume;
@@ -677,21 +794,18 @@ if (!class_exists("MendeleyPlugin")) {
 						$result .= ', ' . $doc->publisher;
 					}
 				}
-				if (isset($doc->url)) {
-					foreach(explode(chr(10),$doc->url) as $urlitem) {
-						$result .= ', '.$urlitem;
-					}
-				} 
-				if (isset($doc->doi)) {
-                                	$result .= ', doi:' . $doc->doi;
+				if (isset($doc->identifiers)) {
+				   if (isset($doc->identifiers->doi)) {
+                                	$result .= ', doi:' . $doc->identifiers->doi;
+				   }
 				}
 				} else {
 				$result .= '<span class="wpmauthors">' . $authors . '</span> ' .
 			        	'<span class="wpmyear">(' . $doc->year . ')</span> ' . 
 			        	'<span class="wpmtitle">' . $doc->title . '</span>';
-				if (isset($doc->publication_outlet)) {
+				if (isset($doc->source)) {
 					$result .= ', <span class="wpmoutlet">' . 
-				    	$doc->publication_outlet . '</span>';
+				    	$doc->source . '</span>';
 				}
 				if (isset($doc->volume)) {
 					$result .= ' <span class="wpmvolume">' . $doc->volume . '</span>';
@@ -714,8 +828,9 @@ if (!class_exists("MendeleyPlugin")) {
 						$result .= ', <span class="wpmpublisher">' . $doc->publisher . '</span>';
 					}
 				}
-				if (isset($doc->url)) {
-					foreach(explode(chr(10),$doc->url) as $urlitem) {
+				if (isset($doc->websites)) {
+				        $url = $doc->websites[0];
+					foreach(explode(chr(10),$url) as $urlitem) {
 						// determine the text for the anchor
 						$atext = "url";
 						if (strpos($urlitem, "www.pubmedcentral.nih.gov", false)) { $atext = "pubmed central"; }
@@ -729,10 +844,11 @@ if (!class_exists("MendeleyPlugin")) {
 						if (startsWith($urlitem, "http://www.scribd.com", false)) { $atext = "scribd"; }
 						$result .= ', <span class="wpmurl"><a target="_blank" href="' . $urlitem . '"><span class="wpmurl' . $atext . '">' . $atext . '</span></a></span>';
 					}
-				} else {
-					if (isset($doc->doi)) {
-                                		$atext = "doi:" . $doc->doi;
-                                		$result .= ', <span class="wpmurl"><a target="_blank" href="http://dx.doi.org/' . $doc->doi . '"><span class="wpmurl' . $atext . '">' . $atext . '</span></a></span>';
+				}
+				if (isset($doc->identifiers)) {
+				   if (isset($doc->identifiers->doi)) {
+                                		$atext = "doi:" . $doc->identifiers->doi;
+                                		$result .= ', <span class="wpmurl"><a target="_blank" href="http://dx.doi.org/' . $doc->identifiers->doi . '"><span class="wpmurl' . $atext . '">' . $atext . '</span></a></span>';
                                 	}
 				}
 				}
@@ -742,10 +858,10 @@ if (!class_exists("MendeleyPlugin")) {
 		}
 
 		function &mendeleyNames2CiteProcNames($names) {
-			 if (!$names) return $names;
+			if (!$names) return $names;
 			foreach ($names as $rank => $name) {
-				$name->given = $name->forename;
-				$name->family = $name->surname;
+				$name->given = $name->first_name;
+				$name->family = $name->last_name;
 			}
 			return $names;
 		}
@@ -786,10 +902,11 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 				$tmps .= '<a href="' .  $tmpurl . '">' . $doc->title . '</a>';
 			} else {
-				if (isset($doc->url)) {
-					$tmps .= '<a href="' .  $doc->url . '">' . $doc->title . '</a>';
+				if (isset($doc->websites)) {
+					$url = $doc->websites[0];
+					$tmps .= '<a href="' .  $url . '">' . $doc->title . '</a>';
 				} else {
-					$tmps .= '<a href="' . $doc->mendeley_url . '">' . $doc->title . '</a>';
+					$tmps .= '<a href="http://www.mendeley.com/research/' . $doc->id . '/">' . $doc->title . '</a>';
 				}
 			}
 			$tmps .= '</span>';
@@ -801,11 +918,11 @@ if (!class_exists("MendeleyPlugin")) {
 		 */
 		function formatDocumentJSON($doc) {
 			$tmps = "{\n" .'"type" : "Publication"' . ",\n";
-			$tmps .= '"id" : "' . $doc->mendeley_url . '"' . ",\n";
+			$tmps .= '"id" : "http://www.mendeley.com/research/' . $doc->id . '/"' . ",\n";
 			$tmps .= '"pub-type": ' . json_encode($doc->type) .  ",\n"; 
 			$tmps .= '"label" : ' . json_encode($doc->title) . ",\n";
-			if (isset($doc->publication_outlet)) {
-				$tmps .= '"booktitle" : ' . json_encode($doc->publication_outlet) . ",\n";
+			if (isset($doc->source)) {
+				$tmps .= '"booktitle" : ' . json_encode($doc->source) . ",\n";
 			}
 			$tmps .= '"description": ' . json_encode($doc->abstract) . ",\n"; 
 
@@ -847,9 +964,9 @@ if (!class_exists("MendeleyPlugin")) {
 			if (isset($doc->pages)) {
 				$tmps .= '"pages" : "' . $doc->pages . '"' . ",\n";
 			}
-			if (isset($doc->url)) {
-				$tmps .= '"url" : ' . json_encode($doc->url) . ",\n";
-				// ...
+			if (isset($doc->websites)) {
+			        $url = $doc->websites[0];
+				$tmps .= '"url" : ' . json_encode($url) . ",\n";
 			}
 			$tmps .= '"year" : "' . $doc->year . '"' . "\n}\n";
 			return $tmps;
@@ -911,7 +1028,7 @@ if (!class_exists("MendeleyPlugin")) {
 			}
 			return NULL;
 		}
-		function getFolderFromCache($cid) {
+		function getDocumentListFromCache($cid) {
 			global $wpdb;
 			if ("$cid" === "") return NULL;
 			if ($this->settings['cache_collections'] === "no") return NULL;
@@ -927,9 +1044,6 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 			}
 			return NULL;
-		}
-		function getCollectionFromCache($cid) {
-			return $this->getFolderFromCache($cid);
 		}
 		function getOutputFromCache($cid) {
 			global $wpdb;
@@ -963,7 +1077,7 @@ if (!class_exists("MendeleyPlugin")) {
 			}
 			$wpdb->insert($table_name, array( 'type' => '0', 'time' => time(), 'mid' => "$docid", 'content' => $jsondoc));
 		}
-		function updateFolderInCache($cid, $doc) {
+		function updateDocumentListInCache($cid, $doc) {
 			global $wpdb;
 			$jsondoc = json_encode($doc);
 			if (!strncmp($jsondoc, "{\"error", 7)) {
@@ -976,9 +1090,6 @@ if (!class_exists("MendeleyPlugin")) {
 				return;
 			}
 			$wpdb->insert($table_name, array( 'type' => '1', 'time' => time(), 'mid' => "$cid", 'content' => $jsondoc));
-		}
-		function updateCollectionInCache($cid, $doc) {
-			return $this->updateFolderInCache($cid, $doc);
 		}
 		function updateOutputInCache($cid, $out) {
 			global $wpdb;
@@ -1043,7 +1154,7 @@ if (!class_exists("MendeleyPlugin")) {
 		 */
 		function comma_separated_names($nameObjectsArray) {
 			foreach ($nameObjectsArray as &$singleNameObject) {
- 				$singleNameObject = $singleNameObject->forename . ' ' . $singleNameObject->surname;
+ 				$singleNameObject = $singleNameObject->first_name . ' ' . $singleNameObject->last_name;
 			}
 			return array_reduce($nameObjectsArray, array(&$this, "comma_concatenate"));
 		}
@@ -1084,6 +1195,16 @@ if (!class_exists("MendeleyPlugin")) {
 				update_option($this->adminOptionsName, $this->settings);
 ?>
 <div class="updated"><p><strong><?php _e("Settings updated.", "MendeleyPlugin"); ?></strong></p></div>
+<?php
+			}
+			if (isset($_POST['emptycache_mendeleyPlugin'])) {
+			        global $wpdb;
+			        $table_name = $wpdb->prefix . "mendeleycache";
+				$sql = "delete from ".$table_name;
+				require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+				dbDelta($sql);
+?>
+<div class="updated"><p><strong><?php _e("Caches emptied.", "MendeleyPlugin"); ?></strong></p></div>
 <?php
 			}
 			if (isset($_POST['request_mendeleyPluginOAuth2'])) {
@@ -1210,12 +1331,9 @@ For further information a short example is given in the readme.txt or visit the 
 
 <p><ul>
 <li>- [mendeley type="folders" id="xxx" groupby=""], groupby=year,authors; sortby; sortorder
-<li>- [mendeley type="groups" id="763" sortby="year" sortorder="desc"]
-<li>- [mendeley type="groups" id="xxx" groupby="" filter=""], filter=ATTRNAME=AVALUE[;ATTRNAME=AVALUE], e.g. author=Michael Koch
-<li>- [mendeley type="documents" id="authored" groupby="year"]
-<li>- [mendeley type="documents" id="123456789"]
-<li>- [mendeley type="own"]
-<li>- [mendeley type="groups" id="763" csl="http://DOMAINNAME/csl/csl_style.csl"]
+<li>- [mendeley type="groups" id="f506234b-5892-3044-a805-462121e73a1e" sortby="year" sortorder="desc"]
+<li>- [mendeley type="groups" id="f506234b-5892-3044-a805-462121e73a1e" groupby="" filter=""], filter=ATTRNAME=AVALUE[;ATTRNAME=AVALUE], e.g. author=Michael Koch
+<li>- [mendeley type="groups" id="f506234b-5892-3044-a805-462121e73a1e" csl="http://DOMAINNAME/csl/csl_style.csl"]
 <li>- ... (see readme.txt for more examples)
 </ul></p>
 
@@ -1267,6 +1385,9 @@ Cache folder/group requests
  
 <div class="submit">
 <input type="submit" name="update_mendeleyPlugin" value="Update Settings">
+</div>
+<div class="submit">
+<input type="submit" name="emptycache_mendeleyPlugin" value="Empty Caches">
 </div>
 
 <h3>Mendeley Collection IDs</h3>
@@ -1358,10 +1479,15 @@ and stored in the plugin.</p>
 				   $filter = NULL;
 				}
 			}
-			// type can be folders, groups, documents
-                        $res = $this->getItemsByType($type, $id);
-                        // process the data
-                        $docarr = $this->loadDocs($res, $type, $id);
+
+			// type can be folders or groups
+			if ($type === 'groups') {
+			   $docarr = $this->getDocumentsForGroup($id);
+			} else { // 'folders'
+			   $res = $this->getDocumentListForFolder($id);
+			   // now get the document data
+			   $docarr = $this->getDocuments($res);
+			}
 
 			$result = "{\n";
 			$result .= '"types"' . " : {\n";
@@ -1646,7 +1772,7 @@ function endsWith($string, $postfix, $caseSensitive = true) {
 	return strrpos($string, $postfix, 0) === $expectedPostition;
 }
 
-function detailsFormatMap1($el) { return $el->surname.', '.$el->forename; }
+function detailsFormatMap1($el) { return $el->last_name.', '.$el->first_name; }
 function detailsFormatMap2($el) { return $el; }
 
 ?>
