@@ -24,7 +24,7 @@ The lists can be included in posts or pages using WordPress shortcodes:
 &#91;mendeley type="groups" id="xxx" groupby="xxx" filter="type=book_section"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx" csl="http://DOMAINNAME/csl/custom_style.csl"&#93;
 
-- the attribute "type" can be set to "folders" or "groups"
+- the attribute "type" can be set to "folders" or "groups" or "own"
 - the attribute "groupby" is optional; possible values currently are: "authors", "year"
 - the attribute "sortby" is optional; possible values currently are: "authors", "year"
 - the attributes "sortbyorder" and "groupbyorder" can have the values "asc" and "desc"
@@ -35,7 +35,7 @@ The lists can be included in posts or pages using WordPress shortcodes:
 - the attribute "csl" is optional; the value must contain a valid URL with a .csl file
 </pre>
 
-<h3>Changes in v1.0</h3>
+<h3>Changes in v1.0 (December 2014)</h3>
 
 In v1.0 of the plugin there are some important changes due to support
 for the new Mendeley API.
@@ -269,31 +269,49 @@ Thanks for contributing to the details display in V0.8.1 to Björn Trappe.
 <li> Configure your settings (especially enter Client Id and Client Secret obtained from Mendeley), and press "Request Access Token"
 </ol>
 
-<p>Please make sure that caching is switched on when accessing shared collections! There is currently an access rate limit of 150 requests per hour - and since we need one request for every document (for retrieving the details) this limit is reached quickly.</p>
+<p>The plugin assumes that curl support is available in your PHP
+engine (extensions/modules curl and php_curl installed). If you see
+error messages like "Call to undefined function curl_init()" most
+likely curl support is not enabled. You can check by creating a .php
+file with a phpinfo(); command in it. Browse to this and search/look
+for curl on the resulting page. If support is enabled, there will be a
+listing for it.</p>
 
-<p>The plugin assumes that curl support is available in your PHP engine. If you see error messages like "Call to undefined function curl_init()" most likely curl support is not enabled. You can check by creating a .php file with a phpinfo(); command in it. Browse to this and search/look for curl on the resulting page. If support is enabled, there will be a listing for it.</p>
-
-<p>There are some reported problems with other plugins that are using the OAuth PHP library like tweetblender: If the other plugin does not check if the library is already loaded (as ours does), initializing the other plugins after wp_mendeley will result in an error message. In this case deactivate the other plugin.</p>
+<p>There are some reported problems with other plugins that are using
+the OAuth PHP library like tweetblender: If the other plugin does not
+check if the library is already loaded (as ours does), initializing
+the other plugins after wp_mendeley will result in an error
+message. In this case deactivate the other plugin.</p>
 
 
 == Upgrade Notice ==
 
-To upgrade the plugin, just deactivate the plugin, overwrite the plugin directory, and reactivate it - or use the automatic upgrade mechanism in WordPress.
+To upgrade the plugin, just deactivate the plugin, overwrite the
+plugin directory, and reactivate it - or use the automatic upgrade
+mechanism in WordPress.
 
 == Frequently Asked Questions ==
 
 What PHP extensions do I need on my Web server to make the plugin work?
 
-Only need the CURL extension seems to be missing on some server systems. Everything else is standard.
-Use phpinfo(); to check what extensions are available on your server.
+Only need the CURL (and the php_curl) extension seems to be missing on
+some server systems. Everything else is standard.  Use phpinfo(); to
+check what extensions are available on your server.
 
 How can I contribute to the development of the plugin?
 
-The plugin is hosted on Google Code: http://code.google.com/p/wp-mendeley-plugin/ - You may check out the newest code from there - and ask for being added as a developer to the repository to upload bug fixes and other additions.
+The plugin is hosted on Google Code:
+http://code.google.com/p/wp-mendeley-plugin/ - You may check out the
+newest code from there - and ask for being added as a developer to the
+repository to upload bug fixes and other additions.
 
 == Screenshots ==
 
 == Change log ==
+
+= 1.0.1 (03.01.2015)
+* corrected problem with single tag filters (thanks to invisigoth99 for the bugfix)
+* added "own" type again (also thanks to invisigoth99)
 
 = 1.0.0 (10.12.2014)
 * major migration to new Mendeley API

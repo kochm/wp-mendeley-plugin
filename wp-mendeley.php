@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.0.0
+Version: 1.0.1
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.0.0' );
+define( 'PLUGIN_VERSION' , '1.0.1' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -297,13 +297,19 @@ if (!class_exists("MendeleyPlugin")) {
 			if (empty($type)) { $type = "folders"; }
 			// map singular cases to plural
 			if ($type === "folder") { $type = "folders"; }
+
+			$id = $attrs['id'];
+			if (empty($id)) { $id = 0; }
+			if ($type === 'own') {
+			   $id = 0;
+			   $type = "groups";
+			}
+
 			if ($type === "group") { $type = "groups"; }
 			// map illegal types to "groups"
 			if (!(($type === "groups") OR ($type === "folders"))) {
 			   $type = "groups";
 			}
-			$id = $attrs['id'];
-			if (empty($id)) { $id = 0; }
 			$groupby = $attrs['groupby'];
 			$grouporder = $attrs['grouporder'];
 			if (empty($grouporder)) {
@@ -470,10 +476,14 @@ if (!class_exists("MendeleyPlugin")) {
                                				$ismatch = 1;
 						}
                                		}
-					if ($ismatch == 0) {
-					   return 0;
+                               	} else {
+				        if (!(stristr($tag_arr, $filterval) === FALSE)) {
+						$ismatch = 1;
 					}
-                               	}
+				}
+				if ($ismatch == 0) {
+				   	return 0;
+				}
 				break;
 			   case "keyword":
 			   case "keywords":
@@ -518,6 +528,9 @@ if (!class_exists("MendeleyPlugin")) {
 
 			$request_count = 500;
 			$url = "documents?group_id=$id&view=all&order=desc&sort=created&limit=$request_count";
+			if ("$id" === "0") { // "own"
+			   $url = "documents?group_id=&authored=true&view=all&order=desc&sort=created&limit=$request_count";
+			}
 			$docarr = $this->sendAuthorizedRequest($url);
 			$mendeley_count = 0 + $headers["Mendeley-Count"];
 			if ($mendeley_count > $request_count) { // pagination ...
@@ -1478,6 +1491,11 @@ and stored in the plugin.</p>
                                 if (strlen($filter)<0) {
 				   $filter = NULL;
 				}
+			}
+
+			if ($type === 'own') {
+			   $id = 0;
+			   $type = "groups";
 			}
 
 			// type can be folders or groups
