@@ -600,7 +600,7 @@ if (!class_exists("MendeleyPlugin")) {
 		}
 		/* get the ids/names of all folders for the current user */
 		function getFolders() {
-			$url = "folders/?limits=500"; // 500 is the maximum possible
+			$url = "folders/?limit=500"; // 500 is the maximum possible
 			$result = $this->sendAuthorizedRequest($url);
 			return $result;
 		}
