@@ -309,6 +309,9 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.0.2 (08.01.2015)
+* corrected bug that resulted in returning only 20 results (from more) for some queries (thanks to poundsixzeros for the bugfix)
+
 = 1.0.1 (03.01.2015)
 * corrected problem with single tag filters (thanks to invisigoth99 for the bugfix)
 * added "own" type again (also thanks to invisigoth99)
