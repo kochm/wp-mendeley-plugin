@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.0.2
+Version: 1.0.3
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.0.2' );
+define( 'PLUGIN_VERSION' , '1.0.3' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -560,7 +560,7 @@ if (!class_exists("MendeleyPlugin")) {
 			}
 
 			$request_count = 500;
-			$url = "folders/$id/documents?limit=$request_count";
+			$url = "folders/$id/documents?limit=$request_count&view=all";
 			$docids = $this->sendAuthorizedRequest($url);
 			if (is_null($docids)) {
 				$docids = array(0 => $result->id);
@@ -882,16 +882,27 @@ if (!class_exists("MendeleyPlugin")) {
 			if (!isset($this->type_map)) {
 				$this->type_map = array(
 						'Book' => 'book',
+						'book' => 'book',
 						'Book Section' => 'chapter',
+						'book_section' => 'chapter',
 						'Journal Article' => 'article-journal',
+						'journal' => 'article-journal',
 						'Magazine Article' => 'article-magazine',
+						'magazine_article' => 'article-magazine',
 						'Newspaper Article' => 'article-newspaper',
+						'newspaper_article' => 'article-newspaper',
 						'Conference Proceedings' => 'paper-conference',
+						'conference_proceedings' => 'paper-conference',
 						'Report' => 'report',
+						'report' => 'report',
+						'working_paper' => 'report',
 						'Thesis' => 'thesis',
+						'thesis' => 'thesis',
 						'Case' => 'legal_case',
 						'Encyclopedia Article' => 'entry-encyclopedia',
+						'encyclopedia_article' => 'entry-encyclopedia',
 						'Web Page' => 'webpage',
+						'web_page' => 'webpage',
 						'Working Paper' => 'report',
 						'Generic' => 'chapter', 
 						);
