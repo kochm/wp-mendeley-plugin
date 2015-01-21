@@ -309,6 +309,9 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.0.4 (21.01.2015)
+* corrected problems with url / websites attribute (especially for CSL formatting)
+
 = 1.0.3 (16.01.2015)
 * corrected problems with type mapping when using CSL formatting
 

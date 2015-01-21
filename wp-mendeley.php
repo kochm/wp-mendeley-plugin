@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.0.3' );
+define( 'PLUGIN_VERSION' , '1.0.4' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -348,7 +348,7 @@ if (!class_exists("MendeleyPlugin")) {
 			   if ($this->settings['debug'] === 'true') {
 				$result .= "<p>Mendeley Plugin: using cached output</p>";
 			   }
-			   return $result.$cacheresult;
+			   return $result . $cacheresult;
 			}
 			$cacheresult = "";
 
@@ -609,11 +609,13 @@ if (!class_exists("MendeleyPlugin")) {
 		   the array given as an input parameter */
 		function getDocuments($docidarr, $count=0) {
 			$res = array();
-			if ($count == 0) { $count = sizeof($docidarr); }
-			for($i=0; $i < $count; $i++) {
+			if(is_array($docidarr)) {
+			   if ($count == 0) { $count = sizeof($docidarr); }
+			   for($i=0; $i < $count; $i++) {
 				$docid = $docidarr[$i]->id;
 				$doc = $this->getDocument($docid);
 				$res[] = $doc;
+			   }
 			}
 			return $res;
 		}
@@ -753,6 +755,11 @@ if (!class_exists("MendeleyPlugin")) {
                                 if (isset($doc->city)) {
                                         $docdata->publisher_place = $doc->city;
 				}
+                                if (isset($doc->websites)) {
+                                   if (isset($doc->websites[0])) {
+                                        $docdata->URL = $doc->websites[0];
+				   }
+				}
                                 if (isset($doc->identifiers)) {
                                         $docdata->DOI = $doc->identifiers->doi;
                                         $docdata->ISBN = $doc->identifiers->isbn;
@@ -842,6 +849,7 @@ if (!class_exists("MendeleyPlugin")) {
 					}
 				}
 				if (isset($doc->websites)) {
+                                   if (isset($doc->websites[0])) {
 				        $url = $doc->websites[0];
 					foreach(explode(chr(10),$url) as $urlitem) {
 						// determine the text for the anchor
@@ -857,6 +865,7 @@ if (!class_exists("MendeleyPlugin")) {
 						if (startsWith($urlitem, "http://www.scribd.com", false)) { $atext = "scribd"; }
 						$result .= ', <span class="wpmurl"><a target="_blank" href="' . $urlitem . '"><span class="wpmurl' . $atext . '">' . $atext . '</span></a></span>';
 					}
+				   }
 				}
 				if (isset($doc->identifiers)) {
 				   if (isset($doc->identifiers->doi)) {
@@ -927,8 +936,10 @@ if (!class_exists("MendeleyPlugin")) {
 				$tmps .= '<a href="' .  $tmpurl . '">' . $doc->title . '</a>';
 			} else {
 				if (isset($doc->websites)) {
+                                   if (isset($doc->websites[0])) {
 					$url = $doc->websites[0];
 					$tmps .= '<a href="' .  $url . '">' . $doc->title . '</a>';
+				   }
 				} else {
 					$tmps .= '<a href="http://www.mendeley.com/research/' . $doc->id . '/">' . $doc->title . '</a>';
 				}
@@ -989,8 +1000,10 @@ if (!class_exists("MendeleyPlugin")) {
 				$tmps .= '"pages" : "' . $doc->pages . '"' . ",\n";
 			}
 			if (isset($doc->websites)) {
+                           if (isset($doc->websites[0])) {
 			        $url = $doc->websites[0];
 				$tmps .= '"url" : ' . json_encode($url) . ",\n";
+			   }
 			}
 			$tmps .= '"year" : "' . $doc->year . '"' . "\n}\n";
 			return $tmps;
@@ -1224,7 +1237,7 @@ if (!class_exists("MendeleyPlugin")) {
 			if (isset($_POST['emptycache_mendeleyPlugin'])) {
 			        global $wpdb;
 			        $table_name = $wpdb->prefix . "mendeleycache";
-				$sql = "delete from ".$table_name;
+				$sql = "delete from ".$table_name." where id>0";
 				require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 				dbDelta($sql);
 ?>
