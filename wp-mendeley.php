@@ -875,7 +875,7 @@ if (!class_exists("MendeleyPlugin")) {
                                    }
 				}
 		             }
-			     if (!$textonly) { $result .= '</p>\r\n'; }
+			     if (!$textonly) { $result .= '</p>' . "\r\n"; }
 			}
 			return $result;
 		}
