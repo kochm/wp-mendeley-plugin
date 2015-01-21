@@ -309,6 +309,9 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.0.5 (21.01.2015)
+* corrected problems too long output lines (especially when output includes links)
+
 = 1.0.4 (21.01.2015)
 * corrected problems with url / websites attribute (especially for CSL formatting)
 

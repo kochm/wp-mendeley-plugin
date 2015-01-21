@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.0.3
+Version: 1.0.5
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.0.4' );
+define( 'PLUGIN_VERSION' , '1.0.5' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -769,26 +769,26 @@ if (!class_exists("MendeleyPlugin")) {
                                 $result .= $cp->render($docdata,'bibliography');
 			}
                         else {
-				if (!$textonly) {
-                        	   $result .= '<p class="wpmref">';
+			    if (!$textonly) {
+                        	$result .= '<p class="wpmref">';
+			    }
+			    $author_arr = $doc->authors;
+			    $authors = "";
+			    if (is_array($author_arr)) {
+				$authors = $this->comma_separated_names($author_arr);
+			    }
+			    $editor_arr = $doc->editors;
+			    $editors = "";
+			    if (is_array($editor_arr)) {
+				$editors = $this->comma_separated_names($editor_arr);
+			    }
+			    if (strlen($authors)<1) {
+				if (strlen($editors)>0) {
+				   $authors = $editors . " (ed.)";
+				   $editors = "";
 				}
-				$author_arr = $doc->authors;
-				$authors = "";
-				if (is_array($author_arr)) {
-					$authors = $this->comma_separated_names($author_arr);
-				}
-				$editor_arr = $doc->editors;
-				$editors = "";
-				if (is_array($editor_arr)) {
-					$editors = $this->comma_separated_names($editor_arr);
-				}
-				if (strlen($authors)<1) {
-					if (strlen($editors)>0) {
-						$authors = $editors . " (ed.)";
-						$editors = "";
-					}
-				}
-				if ($textonly) {
+			    }
+			    if ($textonly) {
 				$result .= $authors . ' (' . $doc->year . '): ' . $doc->title;
 				if (isset($doc->source)) {
 					$result .= ', ' . $doc->source;
@@ -869,12 +869,13 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 				if (isset($doc->identifiers)) {
 				   if (isset($doc->identifiers->doi)) {
-                                		$atext = "doi:" . $doc->identifiers->doi;
-                                		$result .= ', <span class="wpmurl"><a target="_blank" href="http://dx.doi.org/' . $doc->identifiers->doi . '"><span class="wpmurl' . $atext . '">' . $atext . '</span></a></span>';
-                                	}
+                                	$atext = "doi:" . $doc->identifiers->doi;
+                                	$result .= ', <span class="wpmurl"><a target="_blank" href="http://dx.doi.org/' . $doc->identifiers->doi . 
+						'"><span class="wpmurl' . $atext . '">' . $atext . '</span></a></span>';
+                                   }
 				}
-				}
-			        if (!$textonly) { $result .= '</p>'; }
+		             }
+			     if (!$textonly) { $result .= '</p>\r\n'; }
 			}
 			return $result;
 		}
