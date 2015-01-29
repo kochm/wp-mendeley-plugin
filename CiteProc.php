@@ -3,6 +3,7 @@
  *   CiteProc-PHP
  *
  *   Copyright (C) 2010 - 2011  Ron Jerome, all rights reserved
+ *   Updates / bug fixes for use in/with Mendeley plugin 2014 - 2015
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -352,7 +353,7 @@ class csl_format extends csl_rendering_element {
       return '<div ' . $div_class . $div_style . '>' . $prefix . $text . $suffix . '</div>';
     }
 
-    return $prefix . $text . $suffix;
+    return $prefix . $text . $suffix . "\r\n";
   }
 
 }
@@ -1686,6 +1687,7 @@ class csl_mapper {
                                 'URL' => 'URL',
                                 'DOI' => 'DOI',
                                 'ISBN' => 'ISBN',
+                                'PMID' => 'PMID',
                                 'call-number' => 'call_number',
                                 'citation-number' => 'citation_number',
                                 'citation-label' => 'citation_label',

@@ -309,6 +309,10 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.0.6 (29.01.2015) - (thanks to UCFA for the bugfixes)
+* corrected more problems with too long output lines (this time in CSL support)
+* added PMID attribute in CSL template support
+
 = 1.0.5 (21.01.2015)
 * corrected problems too long output lines (especially when output includes links)
 
