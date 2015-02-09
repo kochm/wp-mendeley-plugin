@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.0.6
+Version: 1.0.7
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.0.6' );
+define( 'PLUGIN_VERSION' , '1.0.7' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -455,7 +455,7 @@ if (!class_exists("MendeleyPlugin")) {
                        			if (stristr($tmps, $filterval) === FALSE) {
                                			return 0;
                        			}
-				}
+				} else { return 0; } // if there is no author attribute ...
 				break;
 			   case "editor":
                                	$editor_arr = $doc->editors;
@@ -464,13 +464,13 @@ if (!class_exists("MendeleyPlugin")) {
                        			if (stristr($tmps, $filterval) === FALSE) {
                                			return 0;
                        			}
-                               	}
+				} else { return 0; }
 				break;
 			   case "tag":
 			   case "tags":
                                	$tag_arr = $doc->tags;
+				$ismatch = 0;
 				if (is_array($tag_arr)) {
-				   	$ismatch = 0;
                                		for($i = 0; $i < sizeof($tag_arr); ++$i) {
                                			if (!(stristr($tag_arr[$i], $filterval) === FALSE)) {
                                				$ismatch = 1;
@@ -488,17 +488,21 @@ if (!class_exists("MendeleyPlugin")) {
 			   case "keyword":
 			   case "keywords":
                                	$keyword_arr = $doc->keywords;
+				$ismatch = 0;
 				if (is_array($keyword_arr)) {
-				   	$ismatch = 0;
                                		for($i = 0; $i < sizeof($keyword_arr); ++$i) {
                                			if (!(stristr($keyword_arr[$i], $filterval) === FALSE)) {
                                				$ismatch = 1;
 						}
                                		}
-					if ($ismatch == 0) {
-					   return 0;
+                               	} else {
+				        if (!(stristr($tag_arr, $filterval) === FALSE)) {
+						$ismatch = 1;
 					}
                                	}
+				if ($ismatch == 0) {
+				   return 0;
+				}
 				break;
 			   default:
                                	// other attributes
@@ -522,7 +526,7 @@ if (!class_exists("MendeleyPlugin")) {
 			// check cache
 			$cacheid="documents-group-$id";
 			$docarr = $this->getDocumentListFromCache($cacheid);
-			if (!is_null($result)) {
+			if (!is_null($docarr)) {
 				return $docarr;
 			}
 
@@ -543,7 +547,11 @@ if (!class_exists("MendeleyPlugin")) {
 			}
 
 			// update cache
-			$this->updateDocumentListInCache($cacheid, $docarr);
+			if (is_array($docarr)) {
+			   $this->updateDocumentListInCache($cacheid, $docarr);
+			} else {
+			   $docarr = array();
+			}
 			return $docarr;
 		}
 
@@ -625,6 +633,9 @@ if (!class_exists("MendeleyPlugin")) {
 		   the function ran, the meta information arrays (document objects)
 		   will be grouped according to the groupby parameter. */
 		function groupDocuments($docarr, $groupby, $sortorder) {
+			if (!is_array($docarr)) {
+			   return $docarr;
+			}
 			$grpvalues = array();
 			for($i=0; $i < sizeof($docarr); $i++) {
 				$doc = $docarr[$i];

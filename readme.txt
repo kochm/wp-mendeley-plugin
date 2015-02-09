@@ -309,6 +309,10 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.0.7 (09.02.2015)
+* corrected problems with filters (filter returned true when attribute was missing in Mendeley document)
+* corrected problems with PHP exceptions when Mendeley API did not return proper results (docarr not an array)
+
 = 1.0.6 (29.01.2015) - (thanks to UCFA for the bugfixes)
 * corrected more problems with too long output lines (this time in CSL support)
 * added PMID attribute in CSL template support
