@@ -309,89 +309,92 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
-= 1.0.7 (09.02.2015)
+= 1.0.8 (15.02.2015) =
+* corrected problem with CSL formatting (spaces in front of dots ...) 
+
+= 1.0.7 (09.02.2015) =
 * corrected problems with filters (filter returned true when attribute was missing in Mendeley document)
 * corrected problems with PHP exceptions when Mendeley API did not return proper results (docarr not an array)
 
-= 1.0.6 (29.01.2015) - (thanks to UCFA for the bugfixes)
-* corrected more problems with too long output lines (this time in CSL support)
-* added PMID attribute in CSL template support
+= 1.0.6 (29.01.2015) =
+* corrected more problems with too long output lines (this time in CSL support) - (thanks to UCFA for the bugfix)
+* added PMID attribute in CSL template support - (thanks to UCFA for the bugfix)
 
-= 1.0.5 (21.01.2015)
+= 1.0.5 (21.01.2015) =
 * corrected problems too long output lines (especially when output includes links)
 
-= 1.0.4 (21.01.2015)
+= 1.0.4 (21.01.2015) =
 * corrected problems with url / websites attribute (especially for CSL formatting)
 
-= 1.0.3 (16.01.2015)
+= 1.0.3 (16.01.2015) =
 * corrected problems with type mapping when using CSL formatting
 
-= 1.0.2 (08.01.2015)
+= 1.0.2 (08.01.2015) =
 * corrected bug that resulted in returning only 20 results (from more) for some queries (thanks to poundsixzeros for the bugfix)
 
-= 1.0.1 (03.01.2015)
+= 1.0.1 (03.01.2015) =
 * corrected problem with single tag filters (thanks to invisigoth99 for the bugfix)
 * added "own" type again (also thanks to invisigoth99)
 
-= 1.0.0 (10.12.2014)
+= 1.0.0 (10.12.2014) =
 * major migration to new Mendeley API
 
-= 0.9.6 (25.6.2014)
+= 0.9.6 (25.6.2014) =
 * bugfix: sometimes sortorder=desc and asc were misinterpreted - should work now
 
-= 0.9.5 (16.6.2014)
+= 0.9.5 (16.6.2014) =
 * removed support for OAuth1
 * bugfix: sortorder=desc was ignored - should work now
 
-= 0.9.4 (21.2.2014)
+= 0.9.4 (21.2.2014) =
 * additional code for displaying error messages from CURL subsystem (regarding connecting to Mendeley API server)
 * bugfix regarding authentification of OAuth2 refresh requests
 
-= 0.9.3 (18.2.2014)
+= 0.9.3 (18.2.2014) =
 * bugfix concerning escape characters in OAuth2 client secrets (added stripslashes())
 * added possibility to remove/delete OAuth2 access token
 
-= 0.9.2 (18.2.2014)
+= 0.9.2 (18.2.2014) =
 * bugfix concerning formatting via csl style files
 
-= 0.9.1 (15.2.2014)
+= 0.9.1 (15.2.2014) =
 * bugfix concerning loading of csl style files
 
-= 0.9 (12.2.2014)
+= 0.9 (12.2.2014) =
 * Added support for OAuth2 authentication (since the Mendeley API no longer supports OAuth1)
 * Support for OAuth1 remains in rudimentary form (if you already have authorized the plugin, you can continue to use it)
 
-= 0.8.8 (30.01.2014)
+= 0.8.8 (30.01.2014) =
 * do not include log output in output caching
 * bug fix: CSL formatting now works again (problem with missing elements in output e.g. journal title)
 
-= 0.8.7 (29.01.2014)
+= 0.8.7 (29.01.2014) =
 * refactoring of filtering code to deal with minor problems
 
-= 0.8.6 (29.01.2014)
+= 0.8.6 (29.01.2014) =
 * corrected name of "My Publications" widget
 * again set maximum number of documents (to 10000) since omitting this value sometimes defaults to 10 ...
 
-= 0.8.5 (29.01.2014)
+= 0.8.5 (29.01.2014) =
 * using cURL to load CSL files (instead of get_file_content)
 * added error message when loading CSL file fails
 
-= 0.8.4
+= 0.8.4 =
 * updated CiteProc library (for formatting CSL) to version from 15.3.2013
 * completely removed number of documents limit when reading from Mendeley
 * bug fix: filtering by tags and keywords now works again
 
-= 0.8.3
+= 0.8.3 =
 * bug fixes
 * changed maximum number of documents to be retrieved from Mendeley from 1000 to 10000
 
-= 0.8.2
+= 0.8.2 =
 * added support for filtering for more than one attribute at once
 
-= 0.8.1
+= 0.8.1 =
 * added support for displaying details pages for references directly in Wordpress
 
-= 0.8
+= 0.8 =
 * added support for formatting entries via CSL (Citation Style Language)
 * added tooltip display of full reference in widget lists
 * do not insert error responses in cache database

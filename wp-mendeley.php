@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.0.7
+Version: 1.0.8
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.0.7' );
+define( 'PLUGIN_VERSION' , '1.0.8' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -778,7 +778,7 @@ if (!class_exists("MendeleyPlugin")) {
 				}
                                 // execute citeproc with new stdClass
                                 $cp = new citeproc($csl_file);
-                                $result .= $cp->render($docdata,'bibliography');
+                                $result .= $cp->render($docdata,'bibliography')."\n";
 			}
                         else {
 			    if (!$textonly) {
@@ -887,7 +887,7 @@ if (!class_exists("MendeleyPlugin")) {
                                    }
 				}
 		             }
-			     if (!$textonly) { $result .= '</p>' . "\r\n"; }
+			     if (!$textonly) { $result .= '</p>' . "\n"; }
 			}
 			return $result;
 		}

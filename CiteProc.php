@@ -353,7 +353,7 @@ class csl_format extends csl_rendering_element {
       return '<div ' . $div_class . $div_style . '>' . $prefix . $text . $suffix . '</div>';
     }
 
-    return $prefix . $text . $suffix . "\r\n";
+    return $prefix . $text . $suffix;
   }
 
 }
