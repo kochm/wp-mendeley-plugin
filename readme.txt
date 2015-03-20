@@ -300,14 +300,17 @@ check what extensions are available on your server.
 
 How can I contribute to the development of the plugin?
 
-The plugin is hosted on Google Code:
-http://code.google.com/p/wp-mendeley-plugin/ - You may check out the
+The plugin is hosted on GitHub:
+https://github.com/kochm/wp-mendeley-plugin - You may check out the
 newest code from there - and ask for being added as a developer to the
 repository to upload bug fixes and other additions.
 
 == Screenshots ==
 
 == Change log ==
+
+= 1.0.9 (20.03.2015) =
+* sorting by author did not sort by last name, but by first name - corrected
 
 = 1.0.8 (15.02.2015) =
 * corrected problem with CSL formatting (spaces in front of dots ...) 
