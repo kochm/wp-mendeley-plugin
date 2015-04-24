@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.0.9
+Version: 1.1.0
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.0.9' );
+define( 'PLUGIN_VERSION' , '1.1.0' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -41,6 +41,9 @@ define( 'MENDELEY_API_URL', 'https://api.mendeley.com/' );
 define( 'OAUTH2_AUTHORIZE_ENDPOINT', 'https://api.mendeley.com/oauth/authorize' );
 define( 'OAUTH2_REQUEST_TOKEN_ENDPOINT', 'https://api.mendeley.com/oauth/token' );
 
+define('FILE_CACHE_DIR', ABSPATH . '/wp-content/cache/mendeley-file-cache/');
+define('FILE_CACHE_URL', home_url() . "/wp-content/cache/mendeley-file-cache/");
+
 // JSON services for PHP4
 if (!function_exists('json_encode')) {
 	include_once('json.php');
@@ -69,6 +72,7 @@ if (!class_exists("MendeleyPlugin")) {
 		function init() {
 			$this->getOptions();
 			$this->initializeDatabase();
+			$this->initFileCache();
 			load_plugin_textdomain('wp-mendeley');
 		}
 
@@ -202,6 +206,12 @@ if (!class_exists("MendeleyPlugin")) {
                         	}
 			}
 			$doc = $this->getDocument($docid);
+
+			// load document file to cache if option is switched on
+			if ($this->settings['cache_files'] === "true") {
+			   $this->loadFileToCache($doc);
+			}
+
 			preg_match_all('/\{([^\}]*)\}/', $content, $matches);
                         if(!isset($matches[0])){
                                 $matches[0] = array();
@@ -233,6 +243,20 @@ if (!class_exists("MendeleyPlugin")) {
 						case 'isbn':
                         		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
 						        break;
+						case 'filelink':
+							$tmps = "";
+						        $url = $this->getFileCacheUrl($doc);
+							if (!$url==null) {
+							   $tmps = "<a href='$url'>PDF</a>";
+							}
+							break;
+						case 'coverimage':
+							$tmps = "";
+						        $url = $this->getCoverImageUrl($doc);
+							if (!$url==null) {
+							   $tmps = "<img src='$url' align='left' style='margin-right: 10px;'/>";
+							}
+							break;
 						case 'full_reference':
 							if (sizeof($tmparr)>1) {
 								$tmps = $this->formatDocument($doc, $tmparr[1]);
@@ -1060,6 +1084,7 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 			}
 		}
+
 		/* check cache database */
 		function getDocumentFromCache($docid) {
 			global $wpdb;
@@ -1152,6 +1177,140 @@ if (!class_exists("MendeleyPlugin")) {
 			$wpdb->insert($table_name, array( 'type' => '10', 'time' => time(), 'mid' => "$cid", 'content' => $out));
 		}
 
+		/* functions dealing with a file cache (for caching PDF files
+		   and thumbnail images */
+
+		function initFileCache() {
+		   // check if DIR exists and create if neccessary
+		   if (!file_exists(ABSPATH . '/wp-content/cache/')) {
+		      mkdir(ABSPATH . '/wp-content/cache/');
+		   }
+		   if (!file_exists(FILE_CACHE_DIR)) {
+		      mkdir(FILE_CACHE_DIR);
+		   }
+		   if (!file_exists(FILE_CACHE_DIR . "failed/")) {
+		      mkdir(FILE_CACHE_DIR . "failed/");
+		   }
+		}
+
+		function fileExistsInCache($doc) {
+		   $filename = FILE_CACHE_DIR . $doc->id."pdf";
+		   if (file_exists($filename)) {
+		      return true;
+		   }
+		   return false;
+		}
+
+		function deleteFileFromCache($doc) {
+		   if ($this->filesExistsInCache($doc)) {
+		      $filename = FILE_CACHE_DIR . $doc->id."pdf";
+		      unlink($filename);
+		   } 
+		   unlink(FILE_CACHE_DIR . "failed/" . $doc->id);
+		}
+
+		function hasFailedToCacheFile($doc) {
+		   if (file_exists(FILE_CACHE_DIR . "failed/" . $doc->id)) {
+		      return true;
+		   }
+		   return false;
+		}
+
+		function setFailedToCacheFile($doc, $value) {
+		   if ($value = false) {
+		      unlink(FILE_CACHE_DIR . "failed/" . $doc->id);
+		   } else {
+		      if (!file_exists(FILE_CACHE_DIR . "failed/" . $doc->id)) {
+		         file_put_contents(FILE_CACHE_DIR . "failed/" . $doc->id, "");
+		      }
+		   }
+		}
+
+		// load pdf file for given document to cache (if it exists)
+		function loadFileToCache($doc) {
+		   global $headers;
+
+		   $fileid = null;
+		   $file_name = null;
+		   $filehash = null;
+
+		   // check if we already have a file in the cache
+		   $filename = FILE_CACHE_DIR . $doc->id . ".pdf";
+		   if (file_exists($filename)) {
+		      return true;
+		   }
+		   $this->setFailedToCacheFile($doc, false);
+
+		   // first get file information from Mendeley API
+		   $url = "files?document_id=" . $doc->id;
+		   $filearr = $this->sendAuthorizedRequest($url);
+		   if (is_array($filearr)) {
+		      for ($i=0; $i < sizeof($filearr); $i++) {
+		         $file = $filearr[$i];
+			 if ($file->mime_type == "application/pdf") {
+			    $fileid = $file->id;
+			    $file_name = $file_name;
+			    $filehash = $file->filehash;
+			 }
+		      }
+		   }
+		   if (!$fileid) {
+		      return false;
+		   }
+
+		   // now try to load the file
+		   $url = "files/".$fileid;
+		   $filename = $doc->id.".pdf";
+		   $result = $this->sendAuthorizedRequest($url);
+             	   $fileurl = $headers['Location'];
+		   if ($fileurl) {
+		      $content = file_get_contents($fileurl);
+		      file_put_contents(FILE_CACHE_DIR . $filename, $content);
+		      return true;
+		   } else {
+		      $this->setFailedToCache($doc, true);
+		   } 
+		   return false;
+		}
+
+		// get the URL to the cached copy of a PDF file or null if there is no cached copy
+		function getFileCacheUrl($doc) {
+		   // check if url should/can be dispayed
+		   $tags = $doc->tags;
+		   foreach($tags as $tag) {
+		      if ($tag === "nofilelink") {
+		         return null;
+		      }
+		   }
+		   $filename = FILE_CACHE_DIR . $doc->id . ".pdf";
+		   if (file_exists($filename)) {
+		      return FILE_CACHE_URL . $doc->id . ".pdf";
+		   }
+		   return null;
+		}
+
+		// get the URL to the cover image png (and generate it if needed)
+		function getCoverImageUrl($doc) {
+		   $filename = FILE_CACHE_DIR . $doc->id . ".png";
+		   if (file_exists($filename)) {
+		      return FILE_CACHE_URL . $doc->id . ".png";
+		   }
+		   $filenamepdf = FILE_CACHE_DIR . $doc->id . ".pdf";
+		   if (!file_exists($filenamepdf)) {
+		      return null;
+		   }
+		   // generate png ...
+		   $im = new imagick($filenamepdf."[0]");
+                   $im->resampleImage (10, 10, imagick::FILTER_UNDEFINED,1);
+                   $im->setCompressionQuality(80);
+                   $im->setImageFormat('png');
+                   $im->writeImage($filename);
+                   $im->clear();
+                   $im->destroy();
+		   return FILE_CACHE_URL . $doc->id . ".png";
+		}
+
+
 		function getOptions() {
 			if ($this->settings != null)
 				return $this->settings;
@@ -1160,6 +1319,7 @@ if (!class_exists("MendeleyPlugin")) {
 				'cache_collections' => 'week',
 				'cache_docs' => 'week',
 				'cache_output' => 'day',
+				'cache_files' => 'false',
 				'oauth2_client_id' => '',
 				'oauth2_client_secret' => '',
 				'oauth2_access_token' => '',
@@ -1229,6 +1389,9 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 				if (isset($_POST['cacheOutput'])) {
 					$this->settings['cache_output'] = $_POST['cacheOutput'];
+				}
+				if (isset($_POST['cacheFiles'])) {
+					$this->settings['cache_files'] = $_POST['cacheFiles'];
 				}
 				if (isset($_POST['oauth2ClientId'])) {
 					$this->settings['oauth2_client_id'] = $_POST['oauth2ClientId'];
@@ -1415,7 +1578,17 @@ Cache folder/group requests
     </select><br/>
 </p>
 
-<p>To turn on caching is important, because Mendeley currently imposes a rate limit to requests to the service (currently 150 requests per hour - and we need one request for every single document details). See <a href="http://dev.mendeley.com/docs/rate-limiting">http://dev.mendeley.com/docs/rate-limiting</a> for more details on this restriction.</p>
+<p>To turn on caching is important, because Mendeley currently imposes a rate limit to requests to the service. See <a href="http://dev.mendeley.com/docs/rate-limiting">http://dev.mendeley.com/docs/rate-limiting</a> for more details on this restriction.</p>
+
+<p>
+ Cache files
+    <select name="cacheFiles" size="1">
+      <option value="false" id="false" <?php if ($this->settings['cache_files'] === "false") { echo(' selected="selected"'); }?>>no</option>
+      <option value="true" id="true" <?php if ($this->settings['cache_files'] === "true") { echo(' selected="selected"'); }?>>yes</option>
+    </select><br/>
+</p>
+
+<p>File caching will download PDFs associated with the documents to the local machine and make them available in the details view.</p>
 
 <h4>List Layout / Details</h4>
 

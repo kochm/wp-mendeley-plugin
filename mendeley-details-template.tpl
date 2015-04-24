@@ -1,3 +1,4 @@
+{coverimage}
 <h1>{title} ({type})</h1>
 <p>Erscheinungsjahr:{year}</p>
 <p>Author(s): {authors}<br></p>
@@ -18,3 +19,5 @@
 <p>ISBN: {isbn}</p>
 
 <a href="{mendeley_url}">Reference on Mendeley.com</a></p>
+
+{filelink}

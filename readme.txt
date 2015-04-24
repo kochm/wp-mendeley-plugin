@@ -178,11 +178,19 @@ authors, doi, editors, translators, categories, identifiers, issue,
 keywords, mendeley_url, pages, producers, publication_outlet,
 published_in, tags, title, type, url, uuid, volume, year - also see
 the Mendeley API documentation at
-http://apidocs.mendeley.com/home/public-resources/search-details) you
+http://dev.mendeley.com/methods/#core-document-attributes) you
 can use the special attribute "full_reference" to insert a full
 reference. The attribute can be annotated with a CSL url to do the
 formatting according to a CSL stylesheet:
 {full_reference,http://site/url.csl}
+
+When caching PDF files is enabled, you additionally can use "filelink"
+which will produce the word PDF with a link to the PDF file - and the
+special attribute "coverimage" which will produce an image tag with a
+link to an image of the first page of the PDF. To switch off generating 
+file links for single documents (e.g. because of copyright issues), 
+you can add the tag "nofilelink" to the tags of the document in
+Mendeley.
 
 <h3>JSON data source</h3>
 
@@ -308,6 +316,10 @@ repository to upload bug fixes and other additions.
 == Screenshots ==
 
 == Change log ==
+
+= 1.1.0 (24.04.2015) =
+* added support for downloading PDF files to local cache and make them available in detail view
+* added support for automatically generating and displaying thumbnails for documents
 
 = 1.0.9 (20.03.2015) =
 * sorting by author did not sort by last name, but by first name - corrected
