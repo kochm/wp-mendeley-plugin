@@ -17,12 +17,12 @@ Using the public API from Mendeley, meta-information on documents in personal, p
 The lists can be included in posts or pages using WordPress shortcodes:
 <pre>
 &#91;mendeley type="folders" id="xxx" groupby="xxx"&#93;
-&#91;mendeley type="groups" id="xxx" groupby="xxx"&#93;
-&#91;mendeley type="groups" id="xxx" sortby="xxx" sortbyorder="xxx"&#93;
+&#91;mendeley type="groups" id="xxx" groupby="xxx" style="cover,link"&#93;
+&#91;mendeley type="groups" id="xxx" sortby="xxx" sortbyorder="xxx" style="short"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx" filter="author=Michael Koch"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx" filter="author=Michael Koch;type=journal"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx" filter="type=book_section"&#93;
-&#91;mendeley type="groups" id="xxx" groupby="xxx" csl="http://DOMAINNAME/csl/custom_style.csl"&#93;
+&#91;mendeley type="groups" id="xxx" groupby="xxx" csl="http://DOMAINNAME/csl/custom_style.csl" style="cover,link"&#93;
 
 - the attribute "type" can be set to "folders" or "groups" or "own"
 - the attribute "groupby" is optional; possible values currently are: "authors", "year"
@@ -32,6 +32,7 @@ The lists can be included in posts or pages using WordPress shortcodes:
 - in "filter" one or more equal matches can be filtered for; if more than one filter rule is specified, than documents are displayed only when all filter rules match 
 - possible attribute names to filter for are: type, title, year, author, editor, publisher, tag, keyword, abstract (when filtering for tag or keyword, a substring search is performed, so "blog" also matches "microblog")
 - possible values for attribute type: ['journal' or 'book' or 'generic' or 'book_section' or 'conference_proceedings' or 'working_paper' or 'report' or 'web_page' or 'thesis' or 'magazine_article' or 'statute' or 'patent' or 'newspaper_article' or 'computer_program' or 'hearing' or 'television_broadcast' or 'encyclopedia_article' or 'case' or 'film' or 'bill']
+- the attribute "style" controlls the output - you can specify several values separated by commas - possible values are: cover (add cover images), link (add links to full texts), short (use a short version - i.e. for widgets - not possible if csl formatting is used)
 - the attribute "csl" is optional; the value must contain a valid URL with a .csl file
 </pre>
 
@@ -273,7 +274,7 @@ Thanks for contributing to the details display in V0.8.1 to Björn Trappe.
 <ol>
 <li> Upload archive contents to the `/wp-content/plugins/` directory
 <li> Activate the plugin through the 'Plugins' menu in WordPress
-<li> Obtain Client Id and Client Secret from Mendeley (see http://dev.mendeley.com/applications/register/) - When asked for a callback/redirection URI, specify the URL provided on the options page of the plugin
+<li> Obtain Client Id and Client Secret from Mendeley (see http://dev.mendeley.com/applications/register/) - When asked for a callback/redirection URI, specify the URL provided on the plugin settings page of the plugin (Go to "settings" - "WP Mendeley" and scroll down to the heading "API Keys" and enter the URI specified there.)
 <li> Configure your settings (especially enter Client Id and Client Secret obtained from Mendeley), and press "Request Access Token"
 </ol>
 
@@ -316,6 +317,10 @@ repository to upload bug fixes and other additions.
 == Screenshots ==
 
 == Change log ==
+
+= 1.1.1 (02.07.2015) =
+* added support for displaying thumbnail images and download links in lists (new "style" attribute)
+* corrected problem with maxdocs attribute (lists did always display one more then requested)
 
 = 1.1.0 (24.04.2015) =
 * added support for downloading PDF files to local cache and make them available in detail view

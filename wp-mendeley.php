@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.0
+Version: 1.1.1
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.0' );
+define( 'PLUGIN_VERSION' , '1.1.1' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -311,12 +311,13 @@ if (!class_exists("MendeleyPlugin")) {
 		     - sortyby
 		     - sortorder
 		     - csl
+		     - csladd
 		     - filter
 		     - maxdocs
 		   - maxdocs: a maximum number of references to be included in the list or 0 if there is no maximum
-		   - style: the style to format the references - possible values are "standard" and "shortlist"; only "standard" will interpret attribute "csl"
+		   - style: the style to format the references - possible values (comma separated) are "short", "cover", "link"
 		*/
-		function formatCollection($attrs = NULL, $maxdocs = 0, $style="standard") {
+		function formatCollection($attrs = NULL, $maxdocs = 0, $style="") {
 			$type = $attrs['type'];
 			if (empty($type)) { $type = "folders"; }
 			// map singular cases to plural
@@ -327,6 +328,20 @@ if (!class_exists("MendeleyPlugin")) {
 			if ($type === 'own') {
 			   $id = 0;
 			   $type = "groups";
+			}
+
+			// overwrite parameter if set ...
+			$tmpstyle = $attrs['style'];
+			if (!empty($tmpstyle)) { $style = $tmpstyle; }
+			$showcover = false;
+			$showlink = false;
+			if ($style) {
+			   if (strpos($style, 'cover') !== false) {
+			      $showcover = true;
+			   }
+			   if (strpos($style, 'link') !== false) {
+			      $showlink = true;
+			   }
 			}
 
 			if ($type === "group") { $type = "groups"; }
@@ -350,6 +365,7 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 			}
 			$csl = (isset($attrs['csl'])?$attrs['csl']:Null) ;
+
 			$filter = (isset($attrs['filter'])?$attrs['filter']:array()) ;
 			$maxtmp = $attrs['maxdocs'];
 			if (isset($maxtmp)) {
@@ -424,19 +440,25 @@ if (!class_exists("MendeleyPlugin")) {
 					}
 				}
 
-				// currently, there are two styles, one for widgets ("shortlist") and the
-				// standard one ("standard") - the latter allows the optional attribute "csl"
-				if ($style === "shortlist") {
-					$result .= '<li class="wpmlistref">' . $this->formatDocumentShort($doc) .  '</li>';
-					$cacheresult .= '<li class="wpmlistref">' . $this->formatDocumentShort($doc) .  '</li>';
+				if (($showcover == true) or ($showlink == true)) {
+				   // load document file to cache if option is switched on
+				   if ($this->settings['cache_files'] === "true") {
+			   	      $this->loadFileToCache($doc);
+				   }
+				}
+			        if (strpos($style, 'short') !== false) {
+				   $tmps = '<li class="wpmlistref">' . $this->formatDocumentShort($doc,Null,$showcover,$showlink) .  '</li>';
+				   $result .= $tmps;
+				   $cacheresult .= $tmps;
 				} else {
-					// do static formatting or formatting with CSL stylesheet
-					$result = $result . $this->formatDocument($doc,$csl);
-					$cacheresult = $cacheresult . $this->formatDocument($doc,$csl);
+				   // do static formatting or formatting with CSL stylesheet
+				   $tmps = $this->formatDocument($doc,$csl,False,$showcover,$showlink);
+				   $result .= $tmps;
+				   $cacheresult .= $tmps;
 				}
 
 				if ($maxdocs > 0) {
-					if ($countfiltered > $maxdocs) {
+					if ($countfiltered >= $maxdocs) {
 					   if ($this->settings['debug'] === 'true') {
 					      $result .= "<p>Mendeley Plugin: aborting output because maximum number of documents ($maxdocs) reached</p>";
 					   }		      
@@ -736,7 +758,7 @@ if (!class_exists("MendeleyPlugin")) {
 			chapter
 			id
 		*/
-		function formatDocument($doc, $csl=Null, $textonly=False) {
+		function formatDocument($doc, $csl=Null, $textonly=False, $showcover=False, $showlink=False) {
 			$result = '';
 
                         // format document with a given CSL style and the CiteProc.php
@@ -800,13 +822,36 @@ if (!class_exists("MendeleyPlugin")) {
                                         $docdata->ISBN = $doc->identifiers->isbn;
                                         $docdata->PMID = $doc->identifiers->pmid;
 				}
+				// show cover image?
+			        if (!$textonly) {
+				   if ($showcover) {
+			   	      $url = $this->getCoverImageUrl($doc);
+			   	      if (!$url==null) {
+			      	         $result .= "<img src='$url' align='left' width='50' style='margin-right: 5px;'/>";
+			   	      }
+				   }
+				}
                                 // execute citeproc with new stdClass
                                 $cp = new citeproc($csl_file);
                                 $result .= $cp->render($docdata,'bibliography')."\n";
+				if ($showlink) {
+				   $url = $this->getFileCacheUrl($doc);
+				   if (!$url==null) {
+				      $result .= " <a href='$url'>PDF</a>";
+				   }
+				}
+				$result .= "<br clear='all'/>\n";
 			}
                         else {
 			    if (!$textonly) {
                         	$result .= '<p class="wpmref">';
+				// show cover image?
+				if ($showcover) {
+			   	   $url = $this->getCoverImageUrl($doc);
+			   	   if (!$url==null) {
+			      	      $result .= "<img src='$url' align='left' width='50' style='margin-right: 5px;'/>";
+			   	   }
+				}
 			    }
 			    $author_arr = $doc->authors;
 			    $authors = "";
@@ -911,7 +956,16 @@ if (!class_exists("MendeleyPlugin")) {
                                    }
 				}
 		             }
-			     if (!$textonly) { $result .= '</p>' . "\n"; }
+			     if ($showlink) {
+				$url = $this->getFileCacheUrl($doc);
+				if (!$url==null) {
+				   $result .= " <a href='$url'>PDF</a>";
+				}
+			     }
+			     if (!$textonly) { 
+				$result .= "<br clear='all'/>";
+			        $result .= '</p>' . "\n"; 
+		             }
 			}
 			return $result;
 		}
@@ -956,11 +1010,17 @@ if (!class_exists("MendeleyPlugin")) {
 			return $this->type_map[$type];
 		}
 		
-		function formatDocumentShort($doc,$csl=Null) {
+		function formatDocumentShort($doc,$csl=Null,$showcover=false,$showlink=false) {
 			if ($this->settings['detail_tips'] === 'false') {
 				$tmps = '<span class="wpmtitle">';
 			} else {
-				$tmps = '<span class="wpmtitle" title="'.$this->formatDocument($doc,$csl,True).'">';
+				$tmps = '<span class="wpmtitle" title="'.$this->formatDocument($doc,$csl,true).'">';
+			}
+			if ($showcover) {
+			   $url = $this->getCoverImageUrl($doc);
+			   if (!$url==null) {
+			      $tmps .= "<img src='$url' align='left' width='50' style='margin-right: 5px;'/>";
+			   }
 			}
 			$tmpurl = $this->settings['detail_url'];
 			if (isset($tmpurl) && strlen($tmpurl)>0) {
@@ -1689,7 +1749,7 @@ and stored in the plugin.</p>
 			$attrs['filter'] = $filter;
 			$attrs['sortby'] = "year";
 			$attrs['sortorder'] = "desc";
-			return $this->formatCollection($attrs, $maxdocs, "shortlist");
+			return $this->formatCollection($attrs, $maxdocs, "short");
 		}
 
 		/**

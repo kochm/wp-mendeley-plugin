@@ -1361,9 +1361,11 @@ class csl_bibliography  extends csl_format {
   function render($data, $mode = NULL) {
     $this->citeproc->quash = array();
     $text = $this->layout->render($data, 'bibliography');
+    /* not needed for MendeleyPlugin integration!!!
     if ($this->{'hanging-indent'} == 'true') {
-      $text = '<div style="  text-indent: -25px; padding-left: 25px;">' . $text . '</div>';
+      $text = '<div style="text-indent: -25px; padding-left: 25px;">' . $text . '</div>';
     }
+    */
     $text = str_replace('?.', '?', str_replace('..', '.', $text));
     return $this->format($text);
   }
