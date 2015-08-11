@@ -318,6 +318,10 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.1.2 (11.08.2015) =
+* do not insert the <br clear='all'> after every reference if no cover images are used
+* changed PHP4 style constructors to support WordPress 4.3
+
 = 1.1.1 (02.07.2015) =
 * added support for displaying thumbnail images and download links in lists (new "style" attribute)
 * corrected problem with maxdocs attribute (lists did always display one more then requested)

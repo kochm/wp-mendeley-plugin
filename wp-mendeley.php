@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.1
+Version: 1.1.2
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.1' );
+define( 'PLUGIN_VERSION' , '1.1.2' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -840,7 +840,12 @@ if (!class_exists("MendeleyPlugin")) {
 				      $result .= " <a href='$url'>PDF</a>";
 				   }
 				}
-				$result .= "<br clear='all'/>\n";
+			        if (!$textonly) {
+				   if ($showcover) {
+				      $result .= "<br clear='all'/>";
+				   }
+				}
+				$result .= "\n";
 			}
                         else {
 			    if (!$textonly) {
@@ -1879,8 +1884,8 @@ if (isset($mendeleyPlugin)) {
  */
 class MendeleyCollectionWidget extends WP_Widget {
     /** constructor */
-    function MendeleyCollectionWidget() {
-        parent::WP_Widget(false, $name = 'Mendeley Collection');	
+    function __construct() {
+        parent::__construct(false, $name = 'Mendeley Collection');	
     }
 
     /** @see WP_Widget::widget */
@@ -1950,8 +1955,8 @@ class MendeleyCollectionWidget extends WP_Widget {
  */
 class MendeleyOwnWidget extends WP_Widget {
     /** constructor */
-    function MendeleyOwnWidget() {
-        parent::WP_Widget(false, $name = 'Mendeley My Publications');	
+    function __construct() {
+        parent::__construct(false, $name = 'Mendeley My Publications');	
     }
 
     /** @see WP_Widget::widget */
