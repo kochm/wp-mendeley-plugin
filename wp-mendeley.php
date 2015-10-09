@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.2
+Version: 1.1.3
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.2' );
+define( 'PLUGIN_VERSION' , '1.1.3' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -66,6 +66,7 @@ if (!class_exists("MendeleyPlugin")) {
 		var $adminOptionsName = "MendeleyPluginAdminOptions";
 		protected $options = null;
 		protected $error_message = "";
+		var $expandCounter = 0; // count expandables (in text output)
 		function MendeleyPlugin() { // constructor
 			$this->init();
 		}
@@ -934,12 +935,56 @@ if (!class_exists("MendeleyPlugin")) {
 						$result .= ', <span class="wpmpublisher">' . $doc->publisher . '</span>';
 					}
 				}
+				if (isset($doc->tags)) {
+				   $tag_array = $doc->tags;
+        	                       	foreach($tag_array as $value) {
+			              		if ($value == "award:honorablemention") {
+		      	        			$result .= ', <span class="wpmaward">Honorable Mention Award</span>';
+		      				}
+			              		if ($value == "award:bestpaper") {
+		      	        			$result .= ', <span class="wpmaward">Best Paper Award</span>';
+		      				}
+			              		elseif ($value == "award:bestpapernominee") {
+		      	        			$result .= ', <span class="wpmaward">Best Paper Nominee</span>';
+		      				}
+			              		elseif ($value == "award:bestposter") {
+		      	        			$result .= ', <span class="wpmaward">Best Poster Award</span>';
+		      				}
+			              		elseif ($value == "award:bestposternominee") {
+		      	        			$result .= ', <span class="wpmaward">Best Poster Nominee</span>';
+		      				}
+			              		elseif ($value == "award:bestdemo") {
+		      	        			$result .= ', <span class="wpmaward">Best Demo Award</span>';
+		      				}
+			              		elseif ($value == "award:bestdemonominee") {
+		      	        			$result .= ', <span class="wpmaward">Best Demo Nominee</span>';
+		      				}
+			              		elseif ($value == "award:bestvideo") {
+		      	        			$result .= ', <span class="wpmaward">Best Video Award</span>';
+		      				}
+			              		elseif ($value == "award:bestvideonominee") {
+		      	        			$result .= ', <span class="wpmaward">Best Video Nominee</span>';
+		      				}
+			              		if ($value == "award:bestpresentation") {
+		      	        			$result .= ', <span class="wpmaward">Best Presentation Award</span>';
+		      				}
+			              		elseif ($value == "award:bestpresentationnominee") {
+		      	        			$result .= ', <span class="wpmaward">Best Presentation Nominee</span>';
+		      				}
+	                     		}
+
+                                }
 				if (isset($doc->websites)) {
                                    if (isset($doc->websites[0])) {
 				        $url = $doc->websites[0];
 					foreach(explode(chr(10),$url) as $urlitem) {
 						// determine the text for the anchor
 						$atext = "url";
+						// mark expandables (SlideShare, YouTube)
+						$expandable = False;
+						$slideshareUrl = False;
+						$youtubeUrl = False;
+						
 						if (strpos($urlitem, "www.pubmedcentral.nih.gov", false)) { $atext = "pubmed central"; }
 						if (strpos($urlitem, "ncbi.nlm.nih.gov/pubmed", false)) { $atext = "pubmed"; }
 						// TBD: add support to use icons instead of text
@@ -947,9 +992,29 @@ if (!class_exists("MendeleyPlugin")) {
 						if (endsWith($urlitem, "pdf", false)) { $atext = "pdf"; }
 						if (endsWith($urlitem, "ps", false)) { $atext = "ps"; }
 						if (endsWith($urlitem, "zip", false)) { $atext = "zip"; }
-						if (startsWith($urlitem, "http://www.youtube", false)) { $atext = "watch on youtube"; }
+						if (startsWith($urlitem, "http://www.youtube", false)) { $atext = "watch on youtube"; $youtubeUrl = True; $expandable = True; }
 						if (startsWith($urlitem, "http://www.scribd.com", false)) { $atext = "scribd"; }
+                                                if (startsWith($urlitem, "http://www.slideshare.net", false)) {$atext = "slides"; $slideshareUrl = True; $expandable = True; }
 						$result .= ', <span class="wpmurl"><a target="_blank" href="' . $urlitem . '"><span class="wpmurl' . $atext . '">' . $atext . '</span></a></span>';
+						if( $expandable ) {
+							if ($slideshareUrl) {
+								//make a http request so you get authenticated to embed slideshares
+								$curl = curl_init();
+								curl_setopt($curl, CURLOPT_URL, "http://www.slideshare.net/api/oembed/2?url=" . $urlitem . "&format=json");
+								curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+								$ans = curl_exec($curl);
+								curl_close($curl);
+
+								$json = json_decode($ans);
+								$html = $json->html;
+								$encoded = urlencode($html);
+									
+								$result .= '<span class="expand">' . "<a href='#' onclick='expand(" . $this->expandCounter . ",\"slideshare\",\"" . $encoded . "\");return false;'> [expand]</a>" . '</span>';
+							} else if ($youtubeUrl) {
+								$result .= '<span class="expand">' . "<a href='#' onclick='expand(" . $this->expandCounter . ",\"youtube\",\"" . $urlitem . "\");return false;'> [expand]</a>" . '</span>';
+								
+							}
+						}
 					}
 				   }
 				}
@@ -971,6 +1036,10 @@ if (!class_exists("MendeleyPlugin")) {
 				$result .= "<br clear='all'/>";
 			        $result .= '</p>' . "\n"; 
 		             }
+			     if ($expandable) {
+				$result .= '<span class="hidden" id=' . $this->expandCounter . '></span>';
+				$this->expandCounter = $this->expandCounter + 1;
+			     }
 			}
 			return $result;
 		}

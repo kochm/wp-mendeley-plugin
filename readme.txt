@@ -264,7 +264,7 @@ The following Mendeley API calls are used
 
 <h3>Thanks ...</h3>
 
-Thanks for contributions to Rhodri Cusack and Matthias Budde.
+Thanks for various contributions to Rhodri Cusack and Matthias Budde.
 
 Thanks for contributing to the CSL integration in V0.8 to Philipp Plagemann, Claudia Armbruster and Martin Wandtke.
 Thanks for contributing to the details display in V0.8.1 to Björn Trappe.
@@ -317,6 +317,10 @@ repository to upload bug fixes and other additions.
 == Screenshots ==
 
 == Change log ==
+
+= 1.1.3 (09.10.2015) =
+* support for adding information about awards (won by the publication) via tags - contributed by Matthias Budde
+* support for embedding content on YouTube and SlideShare - contributed by Matthias Budde
 
 = 1.1.2 (11.08.2015) =
 * do not insert the <br clear='all'> after every reference if no cover images are used
