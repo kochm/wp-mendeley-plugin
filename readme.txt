@@ -318,6 +318,9 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.1.4 (13.10.2015) =
+* added missing javascript for support for embedding content on YouTube and SlideShare - contributed by Matthias Budde
+
 = 1.1.3 (09.10.2015) =
 * support for adding information about awards (won by the publication) via tags - contributed by Matthias Budde
 * support for embedding content on YouTube and SlideShare - contributed by Matthias Budde
