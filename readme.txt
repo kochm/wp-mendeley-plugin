@@ -318,6 +318,9 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.1.5 (23.12.2015) =
+* added abstract as variable possible in CSL formatting
+
 = 1.1.4 (13.10.2015) =
 * added missing javascript for support for embedding content on YouTube and SlideShare - contributed by Matthias Budde
 
