@@ -318,6 +318,9 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.1.6 (15.01.2016) =
+* updated author data structures in JSON export to newest Mendeley API - nor SIMILE Exhibit display will get author information again
+
 = 1.1.5 (23.12.2015) =
 * added abstract as variable possible in CSL formatting
 

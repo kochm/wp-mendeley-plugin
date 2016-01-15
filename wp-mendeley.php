@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.5
+Version: 1.1.6
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,13 +10,13 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.5' );
+define( 'PLUGIN_VERSION' , '1.1.6' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
 The MIT License
 
-Copyright (c) 2010-2015 Michael Koch (email: michael.koch@acm.org)
+Copyright (c) 2010-2016 Michael Koch (email: michael.koch@acm.org)
  
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1140,7 +1140,7 @@ if (!class_exists("MendeleyPlugin")) {
 				$tmps .= '"author" : [ ' . "\n";
 				for($i = 0; $i < sizeof($author_arr); ++$i) {
 					if ($i > 0) { $tmps .= ', '; }
-					$tmps .= json_encode($author_arr[$i]->forename . ' ' . $author_arr[$i]->surname);
+					$tmps .= json_encode($author_arr[$i]->first_name . ' ' . $author_arr[$i]->last_name);
 				}
 				$tmps .= "\n],\n";
 			}
@@ -1149,7 +1149,7 @@ if (!class_exists("MendeleyPlugin")) {
 				$tmps .= '"editor" : [ ' . "\n";
 				for($i = 0; $i < sizeof($editor_arr); ++$i) {
 					if ($i > 0) { $tmps .= ', '; }
-					$tmps .= json_encode($editor_arr[$i]->forename . ' ' . $editor_arr[$i]->surname);
+					$tmps .= json_encode($editor_arr[$i]->first_name . ' ' . $editor_arr[$i]->last_name);
 				}
 				$tmps .= "\n],\n";
 			}
@@ -1496,7 +1496,7 @@ if (!class_exists("MendeleyPlugin")) {
 
 		/**
 		 * Creates the names for specific object arrays
-		 * @param $nameObjectsArray - array, an array containing objects with the variables 'forename' and 'surname'
+		 * @param $nameObjectsArray - array, an array containing objects with the variables 'first_name' and 'last_name'
 		 * @return the concatenated names string
 		 */
 		function comma_separated_names($nameObjectsArray) {
