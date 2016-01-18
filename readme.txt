@@ -318,6 +318,9 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.1.7 (18.01.2016) =
+* corrected bug for widgets - filter and csl setting were not working in widgets
+
 = 1.1.6 (15.01.2016) =
 * updated author data structures in JSON export to newest Mendeley API - nor SIMILE Exhibit display will get author information again
 
