@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.6
+Version: 1.1.7
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.6' );
+define( 'PLUGIN_VERSION' , '1.1.7' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -1818,12 +1818,13 @@ and stored in the plugin.</p>
 
 		/* return formatted version of collection elements */
 		/* type = 'own', id = 0 for own publications */
-		function formatWidget($type, $id, $maxdocs = 10, $filter = NULL) {
+		function formatWidget($type, $id, $maxdocs = 10, $filter = NULL, $csl = NULL) {
 			if (is_null($id)) return '';
 			$attrs = Array();
 			$attrs['type'] = $type;
 			$attrs['id'] = $id;
 			$attrs['filter'] = $filter;
+			$attrs['csl'] = $csl;
 			$attrs['sortby'] = "year";
 			$attrs['sortorder'] = "desc";
 			return $this->formatCollection($attrs, $maxdocs, "short");
@@ -1989,9 +1990,9 @@ class MendeleyCollectionWidget extends WP_Widget {
               <?php
               		$result = '<ul class="wpmlist">';
 			if (strlen($filter)<1) {
-				$result .= $mendeleyPlugin->formatWidget($ctype, $cid, $maxdocs, array('csl' => $csl));
+				$result .= $mendeleyPlugin->formatWidget($ctype, $cid, $maxdocs, NULL, $csl);
 			} else {
-				$result .= $mendeleyPlugin->formatWidget($ctype, $cid, $maxdocs, array('filter' => $filter, 'csl' => $csl));
+				$result .= $mendeleyPlugin->formatWidget($ctype, $cid, $maxdocs, $filter, $csl);
 			}
 			$result .= '</ul>';
 			echo $result;
