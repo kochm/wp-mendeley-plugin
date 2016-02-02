@@ -318,6 +318,9 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.1.8 (02.02.2016)
+* replaced hard coded /wp-content/cache with WP_CONTENT_DIR/cache
+
 = 1.1.7 (18.01.2016) =
 * corrected bug for widgets - filter and csl setting were not working in widgets
 

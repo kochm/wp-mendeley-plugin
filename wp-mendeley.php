@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.7
+Version: 1.1.8
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.7' );
+define( 'PLUGIN_VERSION' , '1.1.8' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -41,8 +41,8 @@ define( 'MENDELEY_API_URL', 'https://api.mendeley.com/' );
 define( 'OAUTH2_AUTHORIZE_ENDPOINT', 'https://api.mendeley.com/oauth/authorize' );
 define( 'OAUTH2_REQUEST_TOKEN_ENDPOINT', 'https://api.mendeley.com/oauth/token' );
 
-define('FILE_CACHE_DIR', ABSPATH . '/wp-content/cache/mendeley-file-cache/');
-define('FILE_CACHE_URL', home_url() . "/wp-content/cache/mendeley-file-cache/");
+define('FILE_CACHE_DIR', WP_CONTENT_DIR . '/cache/mendeley-file-cache/');
+define('FILE_CACHE_URL', content_url() . "/cache/mendeley-file-cache/");
 
 // JSON services for PHP4
 if (!function_exists('json_encode')) {
@@ -1319,8 +1319,8 @@ if (!class_exists("MendeleyPlugin")) {
 
 		function initFileCache() {
 		   // check if DIR exists and create if neccessary
-		   if (!file_exists(ABSPATH . '/wp-content/cache/')) {
-		      mkdir(ABSPATH . '/wp-content/cache/');
+		   if (!file_exists(WP_CONTENT_DIR . '/cache/')) {
+		      mkdir(WP_CONTENT_DIR . '/cache/');
 		   }
 		   if (!file_exists(FILE_CACHE_DIR)) {
 		      mkdir(FILE_CACHE_DIR);
