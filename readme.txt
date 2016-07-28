@@ -2,8 +2,8 @@
 Contributors: kochm
 Donate link: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
 Tags: bibliography, mendeley
-Requires at least: 2.8
-Tested up to: 4.0
+Requires at least: 4.0
+Tested up to: 4.6
 Stable tag: trunk
 
 Mendeley Plugin for WordPress is a plugin for displaying information from the Mendeley "shared bibliography system" in WordPress blogs.
@@ -317,6 +317,11 @@ repository to upload bug fixes and other additions.
 == Screenshots ==
 
 == Change log ==
+
+= 1.1.9 (28.07.2016)
+* added DEFAULT CHARSET in CREATE TABLE statements
+* added check if returned access token is nil
+* checked with Wordpress 4.6 - added note about this
 
 = 1.1.8 (02.02.2016)
 * replaced hard coded /wp-content/cache with WP_CONTENT_DIR/cache

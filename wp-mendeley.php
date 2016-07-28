@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.8
+Version: 1.1.9
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.8' );
+define( 'PLUGIN_VERSION' , '1.1.9' );
 define( 'PLUGIN_DB_VERSION', 2 );
 
 /* 
@@ -117,7 +117,7 @@ if (!class_exists("MendeleyPlugin")) {
 			      	 $secret = json_decode($auth);
 			      	 $access_token = $secret->access_token;
 			      }
-			      if (strlen("$access_token")>0) {
+			      if (($access_token != nil) && strlen("$access_token")>0) {			      
  				 $this->settings['oauth2_access_token'] = $access_token;
 				 $expires_in = $secret->expires_in;
  				 $this->settings['oauth2_expires_at'] = time()+(integer)$expires_in;
@@ -1201,6 +1201,7 @@ if (!class_exists("MendeleyPlugin")) {
 						  content text,
 						  time bigint(11) DEFAULT '0' NOT NULL,
 						  UNIQUE KEY id (id)
+						  DEFAULT CHARACTER SET=utf8
 						);".
 						"CREATE INDEX wpmidxid ON $table_name (mid);".
 						"CREATE INDEX wpmidxtype ON $table_name (type);";
@@ -1603,7 +1604,7 @@ if (!class_exists("MendeleyPlugin")) {
 				      $secret = json_decode($auth);
 				      $access_token = $secret->access_token;
 				   }
-				   if (strlen("$access_token")>0) {
+				   if (($access_token != nil) && strlen("$access_token")>0) {
  				      $this->settings['oauth2_access_token'] = $access_token;
 				      $expires_in = $secret->expires_in;
  				      $this->settings['oauth2_expires_at'] = time()+(integer)$expires_in;
@@ -1650,7 +1651,7 @@ if (!class_exists("MendeleyPlugin")) {
 			      $secret = json_decode($auth);
 			      $access_token = $secret->access_token;
 			   }
-			   if (strlen("$access_token")>0) {
+			   if (($access_token != nil) && strlen("$access_token")>0) {
  			      $this->settings['oauth2_access_token'] = $access_token;
 			      $expires_in = $secret->expires_in;
  			      $this->settings['oauth2_expires_at'] = time()+(integer)$expires_in;
