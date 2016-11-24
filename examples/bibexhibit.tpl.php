@@ -11,9 +11,9 @@ Template Name: BibExhibit
 <?php  
   include (TEMPLATEPATH . '/header1.php');
 ?>
-<script src="http://static.simile.mit.edu/exhibit/api-2.0/exhibit-api.js" type="text/javascript"></script>
-<script src="http://static.simile.mit.edu/exhibit/extensions-2.0/time/time-extension.js" type="text/javascript"></script>
-<link href="/index.php?mendeley_action=export-json&id=763&type=groups" type="application/json" rel="exhibit/data" />
+<script src="http://api.simile-widgets.org/exhibit/3.1.1/exhibit-api.js" type="text/javascript"></script>
+<script src="http://api.simile-widgets.org/exhibit/3.1.1/extensions/time/time-extension.js" type="text/javascript"></script>
+<link href="/index.php?mendeley_action=export-json&id=9e970750-c839-322d-9f31-e8c6814bffe9&type=groups" type="application/json" rel="exhibit/data" />
 <style>
 div.publication { margin-bottom: 1em; padding: 1em; }
 div.author {}

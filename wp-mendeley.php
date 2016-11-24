@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.9
+Version: 1.1.10
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,8 +10,8 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.9' );
-define( 'PLUGIN_DB_VERSION', 2 );
+define( 'PLUGIN_VERSION' , '1.1.10' );
+define( 'PLUGIN_DB_VERSION', 3 );
 
 /* 
 The MIT License
@@ -1198,7 +1198,7 @@ if (!class_exists("MendeleyPlugin")) {
 						  id mediumint(9) NOT NULL AUTO_INCREMENT,
 						  type mediumint(9) NOT NULL,
 						  mid tinytext NOT NULL,
-						  content text,
+						  content longtext,
 						  time bigint(11) DEFAULT '0' NOT NULL,
 						  UNIQUE KEY id (id)
 						  DEFAULT CHARACTER SET=utf8
@@ -1210,6 +1210,11 @@ if (!class_exists("MendeleyPlugin")) {
 					$this->settings['db_version'] = PLUGIN_DB_VERSION;
 					update_option($this->adminOptionsName, $this->settings);
 				} else {
+					if ($this->settings['db_version'] < 3) {
+						$sql = "ALTER TABLE $table_name MODIFY content longtext;";
+						require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+						dbDelta($sql);
+					}
 					if ($this->settings['db_version'] < 2) {
 						// create index
 						$sql = "CREATE INDEX wpmidxid ON $table_name (mid);".
@@ -1279,9 +1284,12 @@ if (!class_exists("MendeleyPlugin")) {
 		function updateDocumentInCache($docid, $doc) {
 			global $wpdb;
 			$jsondoc = json_encode($doc);
-			if (!strncmp($jsondoc, "{\"error", 7)) {
+ 			if (!strncmp($jsondoc, "{\"error", 7)) {
 				return;
 			}
+			if (!strncmp($jsondoc, "{\"message", 9)) {
+                                return;
+                        }
 			$table_name = $wpdb->prefix . "mendeleycache";
 			$dbdoc = $wpdb->get_row("SELECT * FROM $table_name WHERE type=0 AND mid='$docid'");
 			if ($dbdoc) {
@@ -1435,6 +1443,10 @@ if (!class_exists("MendeleyPlugin")) {
 		   }
 		   $filenamepdf = FILE_CACHE_DIR . $doc->id . ".pdf";
 		   if (!file_exists($filenamepdf)) {
+		      return null;
+		   }
+		   // handle non-installed imagic extension
+		   if (!extension_loaded('imagick')) {
 		      return null;
 		   }
 		   // generate png ...

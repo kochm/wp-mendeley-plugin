@@ -204,12 +204,13 @@ the references.
 
 The following line is used in the Exhibit/Simile application:
 
-<link href="/index.php?mendeley_action=export-json&id=763&type=groups" type="application/json" rel="exhibit/data" />
+<link href="/index.php?mendeley_action=export-json&id=9e970750-c839-322d-9f31-e8c6814bffe9&type=groups" type="application/json" rel="exhibit/data" />
  
-In the directory examples you find a file bibexhibit.tpl.php that can
+In the directory "examples" you find a file bibexhibit.tpl.php that can
 be placed in your Wordpress theme directory. Then you can create a new
 page with the Template BibExhibit that will show the application with
-the data source.
+the data source. Do not forget to edit the file - specify the id of the 
+Mendeley group you want to access in the link-line.
 
 <h3>CSL integration</h3>
 
@@ -274,7 +275,7 @@ Thanks for contributing to the details display in V0.8.1 to Björn Trappe.
 <ol>
 <li> Upload archive contents to the `/wp-content/plugins/` directory
 <li> Activate the plugin through the 'Plugins' menu in WordPress
-<li> Obtain Client Id and Client Secret from Mendeley (see http://dev.mendeley.com/applications/register/) - When asked for a callback/redirection URI, specify the URL provided on the plugin settings page of the plugin (Go to "settings" - "WP Mendeley" and scroll down to the heading "API Keys" and enter the URI specified there.)
+<li> Obtain Client Id and Client Secret from Mendeley (see http://dev.mendeley.com/myapps.html) - When asked for a callback/redirection URI, specify the URL provided on the plugin settings page of the plugin (Go to "settings" - "WP Mendeley" and scroll down to the heading "API Keys" and enter the URI specified there.)
 <li> Configure your settings (especially enter Client Id and Client Secret obtained from Mendeley), and press "Request Access Token"
 </ol>
 
@@ -317,6 +318,11 @@ repository to upload bug fixes and other additions.
 == Screenshots ==
 
 == Change log ==
+
+= 1.1.10 (24.11.2016)
+* changed MySQL data type for data in mendeleycache table from text to longtext
+* added check for imagick (to avoid the plugin to crash if imagick is not available)
+* updated template to use the Mendeley data in Exhibit
 
 = 1.1.9 (28.07.2016)
 * added DEFAULT CHARSET in CREATE TABLE statements
