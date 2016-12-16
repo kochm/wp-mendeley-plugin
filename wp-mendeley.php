@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.10
+Version: 1.1.11
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.10' );
+define( 'PLUGIN_VERSION' , '1.1.11' );
 define( 'PLUGIN_DB_VERSION', 3 );
 
 /* 
@@ -1192,39 +1192,37 @@ if (!class_exists("MendeleyPlugin")) {
 		function initializeDatabase() {
 			global $wpdb;
 			$table_name = $wpdb->prefix . "mendeleycache";
-			if ($this->settings['db_version'] < PLUGIN_DB_VERSION) {
-				if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
-					$sql = "CREATE TABLE " . $table_name . " (
-						  id mediumint(9) NOT NULL AUTO_INCREMENT,
-						  type mediumint(9) NOT NULL,
-						  mid tinytext NOT NULL,
-						  content longtext,
-						  time bigint(11) DEFAULT '0' NOT NULL,
-						  UNIQUE KEY id (id)
-						  DEFAULT CHARACTER SET=utf8
-						);".
-						"CREATE INDEX wpmidxid ON $table_name (mid);".
+			if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+				$sql = "CREATE TABLE " . $table_name . " (
+					  id mediumint(9) NOT NULL AUTO_INCREMENT,
+					  type mediumint(9) NOT NULL,
+					  mid tinytext NOT NULL,
+					  content longtext,
+					  time bigint(11) DEFAULT '0' NOT NULL,
+					  UNIQUE KEY id (id)
+					  DEFAULT CHARACTER SET=utf8
+					);".
+					"CREATE INDEX wpmidxid ON $table_name (mid);".
+					"CREATE INDEX wpmidxtype ON $table_name (type);";
+				require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+				dbDelta($sql);
+				$this->settings['db_version'] = PLUGIN_DB_VERSION;
+				update_option($this->adminOptionsName, $this->settings);
+			} else {
+				if ($this->settings['db_version'] < 2) {
+					// create index
+					$sql = "CREATE INDEX wpmidxid ON $table_name (mid);".
 						"CREATE INDEX wpmidxtype ON $table_name (type);";
 					require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 					dbDelta($sql);
-					$this->settings['db_version'] = PLUGIN_DB_VERSION;
-					update_option($this->adminOptionsName, $this->settings);
-				} else {
-					if ($this->settings['db_version'] < 3) {
-						$sql = "ALTER TABLE $table_name MODIFY content longtext;";
-						require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-						dbDelta($sql);
-					}
-					if ($this->settings['db_version'] < 2) {
-						// create index
-						$sql = "CREATE INDEX wpmidxid ON $table_name (mid);".
-							"CREATE INDEX wpmidxtype ON $table_name (type);";
-						require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-						dbDelta($sql);
-					}
-					$this->settings['db_version'] = PLUGIN_DB_VERSION;
-					update_option($this->adminOptionsName, $this->settings);
 				}
+				if ($this->settings['db_version'] < 3) {
+					$sql = "ALTER TABLE $table_name MODIFY content longtext;";
+					require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+					dbDelta($sql);
+				}
+				$this->settings['db_version'] = PLUGIN_DB_VERSION;
+				update_option($this->adminOptionsName, $this->settings);
 			}
 		}
 
@@ -1462,7 +1460,7 @@ if (!class_exists("MendeleyPlugin")) {
 
 
 		function getOptions() {
-			if ($this->settings != null)
+			if (isset($this->settings) && ($this->settings != null))
 				return $this->settings;
 			$this->settings = array(
 				'debug' => 'false',
