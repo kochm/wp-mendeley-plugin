@@ -320,6 +320,9 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.1.12 (16.12.2016)
+* corrected bug in database initialization code
+
 = 1.1.11 (16.12.2016)
 * corrected some minor bugs
 * changed database initialization code to recreate tables when they heve been deleted
