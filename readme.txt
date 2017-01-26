@@ -266,7 +266,7 @@ The following Mendeley API calls are used
 
 <h3>Thanks ...</h3>
 
-Thanks for various contributions to Rhodri Cusack and Matthias Budde.
+Thanks for various contributions to Rhodri Cusack, Constantin Orasan and Matthias Budde.
 
 Thanks for contributing to the CSL integration in V0.8 to Philipp Plagemann, Claudia Armbruster and Martin Wandtke.
 Thanks for contributing to the details display in V0.8.1 to Björn Trappe.
@@ -319,6 +319,10 @@ repository to upload bug fixes and other additions.
 == Screenshots ==
 
 == Change log ==
+
+= 1.1.13 (26.01.2017)
+* corrected problem with missing agent in curl calls (thanks to Constantin Orasan for the patch)
+* improved error handling for curl calls
 
 = 1.1.12 (16.12.2016)
 * corrected bug in database initialization code

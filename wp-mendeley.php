@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.12
+Version: 1.1.13
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,13 +10,13 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.12' );
+define( 'PLUGIN_VERSION' , '1.1.13' );
 define( 'PLUGIN_DB_VERSION', 3 );
 
 /* 
 The MIT License
 
-Copyright (c) 2010-2016 Michael Koch (email: michael.koch@acm.org)
+Copyright (c) 2010-2017 Michael Koch (email: michael.koch@acm.org)
  
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -101,16 +101,13 @@ if (!class_exists("MendeleyPlugin")) {
 			      // retrieve new authorization token
 			      $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
 			      curl_setopt($curl, CURLOPT_POST, true);
-			      curl_setopt($curl, CURLOPT_POSTFIELDS, 
-			      "grant_type=refresh_token&refresh_token=".urlencode($this->settings['oauth2_refresh_token'])."&client_id=".urlencode($client_id)."&client_secret=".urlencode($client_secret)."&redirect_uri=".urlencode($callback_url)
-				       );
-			      curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1);
+			      curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=refresh_token&refresh_token='.urlencode($this->settings['oauth2_refresh_token']).'&client_id='.urlencode($client_id).'&client_secret='.urlencode($client_secret).'&redirect_uri='.urlencode($callback_url));
+			      curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 		 	      // basic authentication ...
-			      curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-				 "Authorization: Basic " . base64_encode($this->settings['oauth2_client_id'] . ":" . $this->settings['oauth2_client_secret'])
-				 )); // do not addslashes or urlencode here!!!!
+			      curl_setopt($curl, CURLOPT_HEADER, true);
+			      curl_setopt($curl, CURLOPT_HTTPHEADER, array('Authorization: Basic ' . base64_encode($this->settings['oauth2_client_id'] . ':' . $this->settings['oauth2_client_secret'])));
 			      $auth = curl_exec($curl);
-			      if (!$auth) {
+			      if ($auth === false) {
 				 $auth = curl_error($curl);
 			         $access_token = nil;
 			      } else {
@@ -137,7 +134,7 @@ if (!class_exists("MendeleyPlugin")) {
 			      $url = MENDELEY_API_URL . $url;
 			   }
 			   $curl = curl_init($url);
-			   curl_setopt($curl, CURLOPT_HTTPHEADER, array( 'Authorization: Bearer ' . $access_token));
+			   curl_setopt($curl, CURLOPT_HTTPHEADER, array('Authorization: Bearer ' . $access_token));
 			   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 			   curl_setopt($curl, CURLOPT_VERBOSE, true);
 			   curl_setopt($curl, CURLOPT_HEADER, true);
@@ -147,8 +144,9 @@ if (!class_exists("MendeleyPlugin")) {
 				echo "<p>Request: ".$url."</p>";
 			   }
 			   $resp = curl_exec($curl);
-			   if (!$resp) {
+			   if ($resp === false) {
 				echo "<p>Mendeley Plugin Error: Failed accessing Mendeley API: " . curl_error($curl) . "</p>";
+				return null;
 			   }
 			   if ($this->settings['debug'] === 'true') {
 				echo "<p>Response: ".$resp."</p>";
@@ -770,17 +768,15 @@ if (!class_exists("MendeleyPlugin")) {
 				if (empty($csl_file)) {
 				        $curl = curl_init($csl);
 					curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+					curl_setopt($curl, CURLOPT_HEADER, true);
+					curl_setopt($curl, CURLOPT_HTTPHEADER, array('User-Agent: CURL'));
                         		$csl_file = curl_exec($curl);
-					if (curl_getinfo($curl,CURLINFO_HTTP_CODE) < 400) {
-					   if ($csl_file !== false) {
-					      $this->updateOutputInCache($cacheid, $csl_file);
-					   } else {
-					      echo "<p>Mendeley Plugin Error: Failed accessing Menedley API: " . curl_error($curl) . "</p>";
-					   }
-					} else {
-					   echo "<p>Mendeley Plugin Error: Failed accessing Mendeley API: " . curl_getinfo($curl,CURLINFO_HTTP_CODE) . "</p>";
+					if ($csl_file === false) {
+					   echo "<p>Mendeley Plugin Error: Failed accessing Menedley API: " . curl_error($curl) . "</p>";
 					   $csl_file = "";
-					}
+					} else {
+					   $this->updateOutputInCache($cacheid, $csl_file);
+					} 
 					curl_close($curl);
 				}
                         	$csl_object = simplexml_load_string($csl_file);
@@ -1004,6 +1000,8 @@ if (!class_exists("MendeleyPlugin")) {
 								//make a http request so you get authenticated to embed slideshares
 								$curl = curl_init();
 								curl_setopt($curl, CURLOPT_URL, "http://www.slideshare.net/api/oembed/2?url=" . $urlitem . "&format=json");
+								curl_setopt($curl, CURLOPT_HEADER, true);
+								curl_setopt($curl, CURLOPT_HTTPHEADER, array('User-Agent: CURL'));
 								curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 								$ans = curl_exec($curl);
 								curl_close($curl);
@@ -1598,16 +1596,12 @@ if (!class_exists("MendeleyPlugin")) {
 				   // retrieve full authorization token
 				   $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
 				   curl_setopt($curl, CURLOPT_POST, true);
-				   curl_setopt($curl, CURLOPT_POSTFIELDS, 
-				       "grant_type=authorization_code&code=".urlencode($_GET['code'])."&client_id=".urlencode($client_id)."&client_secret=".urlencode($client_secret)."&redirect_uri=".urlencode($callback_url)
-				       );
+				   curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=authorization_code&code='.urlencode($_GET['code']).'&client_id='.urlencode($client_id).'&client_secret='.urlencode($client_secret).'&redirect_uri='.urlencode($callback_url));
 				   curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1);
 				   // basic authentication ...
-				   curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-				       "Authorization: Basic " . base64_encode($client_id . ":" . $client_secret)
-				       )); // do not addslashes or urlencode here!!!!
+				   curl_setopt($curl, CURLOPT_HTTPHEADER, array('Authorization: Basic ' . base64_encode($client_id . ':' . $client_secret)));
 				   $auth = curl_exec($curl);
-				   if (!$auth) {
+				   if ($auth === false) {
 				      $auth = curl_error($curl);
 				      $access_token = nil;
 				   } else {
@@ -1645,16 +1639,12 @@ if (!class_exists("MendeleyPlugin")) {
 			   // retrieve new authorization token
 			   $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
 			   curl_setopt($curl, CURLOPT_POST, true);
-			   curl_setopt($curl, CURLOPT_POSTFIELDS, 
-			      "grant_type=refresh_token&refresh_token=".urlencode($this->settings['oauth2_refresh_token'])."&client_id=".urlencode($client_id)."&client_secret=".urlencode($client_secret)."&redirect_uri=".urlencode($callback_url)
-				       );
+			   curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=refresh_token&refresh_token='.urlencode($this->settings['oauth2_refresh_token']).'&client_id='.urlencode($client_id).'&client_secret='.urlencode($client_secret).'&redirect_uri='.urlencode($callback_url));
 			   curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1);
 		 	   // basic authentication ...
-			   curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-			      "Authorization: Basic " . base64_encode($client_id . ":" . $client_secret)
-			      )); // do not addslashes or urlencode here!!!!
+			   curl_setopt($curl, CURLOPT_HTTPHEADER, array('Authorization: Basic ' . base64_encode($client_id . ':' . $client_secret)));
 			   $auth = curl_exec($curl);
-			   if (!$auth) {
+			   if ($auth === false) {
 			      $auth = curl_error($curl);
 			      $access_token = nil;
 			   } else {
