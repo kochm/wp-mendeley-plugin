@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.13
+Version: 1.1.14
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.13' );
+define( 'PLUGIN_VERSION' , '1.1.14' );
 define( 'PLUGIN_DB_VERSION', 3 );
 
 /* 
@@ -96,16 +96,15 @@ if (!class_exists("MendeleyPlugin")) {
 
 			   // check if access token should be refreshed
 			   $expires_at = $this->settings['oauth2_expires_at'];
-			   if ($expires_at < (time() - 100)) {
+			   if ($expires_at < (time() - 200)) {
 			      $callback_url = admin_url('options-general.php?page=wp-mendeley.php&access_mendeleyPluginOAuth2=true');
 			      // retrieve new authorization token
 			      $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
 			      curl_setopt($curl, CURLOPT_POST, true);
-			      curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=refresh_token&refresh_token='.urlencode($this->settings['oauth2_refresh_token']).'&client_id='.urlencode($client_id).'&client_secret='.urlencode($client_secret).'&redirect_uri='.urlencode($callback_url));
+ 			      curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=refresh_token&refresh_token='.urlencode($this->settings['oauth2_refresh_token']).'&client_id='.urlencode($client_id).'&client_secret='.urlencode($client_secret).'&redirect_uri='.urlencode($callback_url));
 			      curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 		 	      // basic authentication ...
-			      curl_setopt($curl, CURLOPT_HEADER, true);
-			      curl_setopt($curl, CURLOPT_HTTPHEADER, array('Authorization: Basic ' . base64_encode($this->settings['oauth2_client_id'] . ':' . $this->settings['oauth2_client_secret'])));
+			      curl_setopt($curl, CURLOPT_HTTPHEADER, array('Authorization: Basic ' . base64_encode($client_id . ':' . $client_secret)));
 			      $auth = curl_exec($curl);
 			      if ($auth === false) {
 				 $auth = curl_error($curl);
@@ -1560,8 +1559,7 @@ if (!class_exists("MendeleyPlugin")) {
 			        global $wpdb;
 			        $table_name = $wpdb->prefix . "mendeleycache";
 				$sql = "delete from ".$table_name." where id>0";
-				require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-				dbDelta($sql);
+				$wpdb->query($sql);
 ?>
 <div class="updated"><p><strong><?php _e("Caches emptied.", "MendeleyPlugin"); ?></strong></p></div>
 <?php

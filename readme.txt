@@ -320,6 +320,10 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.1.14 (13.02.2017)
+* corrected bug that prevented empty cache to function
+* corrected bug that made automatic renewal of access tokens fail
+
 = 1.1.13 (26.01.2017)
 * corrected problem with missing agent in curl calls (thanks to Constantin Orasan for the patch)
 * improved error handling for curl calls
