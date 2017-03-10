@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.14
+Version: 1.1.16
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.14' );
+define( 'PLUGIN_VERSION' , '1.1.16' );
 define( 'PLUGIN_DB_VERSION', 3 );
 
 /* 
@@ -767,7 +767,7 @@ if (!class_exists("MendeleyPlugin")) {
 				if (empty($csl_file)) {
 				        $curl = curl_init($csl);
 					curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-					curl_setopt($curl, CURLOPT_HEADER, true);
+					curl_setopt($curl, CURLOPT_HEADER, false);
 					curl_setopt($curl, CURLOPT_HTTPHEADER, array('User-Agent: CURL'));
                         		$csl_file = curl_exec($curl);
 					if ($csl_file === false) {
@@ -999,7 +999,7 @@ if (!class_exists("MendeleyPlugin")) {
 								//make a http request so you get authenticated to embed slideshares
 								$curl = curl_init();
 								curl_setopt($curl, CURLOPT_URL, "http://www.slideshare.net/api/oembed/2?url=" . $urlitem . "&format=json");
-								curl_setopt($curl, CURLOPT_HEADER, true);
+								curl_setopt($curl, CURLOPT_HEADER, false);
 								curl_setopt($curl, CURLOPT_HTTPHEADER, array('User-Agent: CURL'));
 								curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 								$ans = curl_exec($curl);
@@ -1405,14 +1405,26 @@ if (!class_exists("MendeleyPlugin")) {
 		   $result = $this->sendAuthorizedRequest($url);
              	   $fileurl = $headers['Location'];
 		   if ($fileurl) {
-		      $content = file_get_contents($fileurl);
-		      file_put_contents(FILE_CACHE_DIR . $filename, $content);
+		      custom_put_contents($fileurl, FILE_CACHE_DIR . $filename);
 		      return true;
 		   } else {
 		      $this->setFailedToCache($doc, true);
 		   } 
 		   return false;
 		}
+
+		function custom_put_contents($source_url='',$local_path=''){
+    		   $time_limit = ini_get('max_execution_time');
+    		   $memory_limit = ini_get('memory_limit');
+    		   set_time_limit(0);
+    		   ini_set('memory_limit', '-1');
+    		   $remote_contents=file_get_contents($source_url);
+    		   $response=file_put_contents($local_path, $remote_contents);
+    		   set_time_limit($time_limit);
+    		   ini_set('memory_limit', $memory_limit);
+    		   return $response;
+		}
+
 
 		// get the URL to the cached copy of a PDF file or null if there is no cached copy
 		function getFileCacheUrl($doc) {
@@ -1441,7 +1453,7 @@ if (!class_exists("MendeleyPlugin")) {
 		      return null;
 		   }
 		   // handle non-installed imagic extension
-		   if (!extension_loaded('imagick')) {
+		   if(!class_exists("imagick")) {
 		      return null;
 		   }
 		   // generate png ...
@@ -1786,7 +1798,7 @@ Cache folder/group requests
 the information from Mendeley Groups and Folders. For using this API you first need to request a Client Id and a Client Secret from Mendeley. These values have to be entered in the following two field. To request the key
 and the secret go to <a href="http://dev.mendeley.com/">http://dev.mendeley.com/</a> and register a new application.</p>
 
-<p>Mendeley plugin redirection URL (to copy for your <a href="http://dev.mendeley.com/applications/register/">client id request at Mendeley</a>)<br/>
+<p>Mendeley plugin redirection URL (to copy for your <a href="http://dev.mendeley.com/myapps.html">client id request at Mendeley</a>)<br/>
 <input type="text" readonly="readonly" name="oauth2RedirectionUrl" value="<?php echo $callback_url; ?>" size="80"></input></p>
 <p>Mendeley API Client Id<br/>
 <input type="text" name="oauth2ClientId" value="<?php echo $this->settings['oauth2_client_id']; ?>" size="60"></input></p>

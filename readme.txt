@@ -288,6 +288,9 @@ file with a phpinfo(); command in it. Browse to this and search/look
 for curl on the resulting page. If support is enabled, there will be a
 listing for it.</p>
 
+<p>For the cover images functionality, you need to have imagick 
+and php support for imagick support installed on your system.</p>
+
 <p>There are some reported problems with other plugins that are using
 the OAuth PHP library like tweetblender: If the other plugin does not
 check if the library is already loaded (as ours does), initializing
@@ -319,6 +322,13 @@ repository to upload bug fixes and other additions.
 == Screenshots ==
 
 == Change log ==
+
+= 1.1.16 (10.03.2017)
+* corrected problem with caching files that are larger than memory limit
+* corrected problem with identifying Imagick extension
+
+= 1.1.15 (22.02.2017)
+* fixed bug with custom CSL introduced by recent CURL bug fix
 
 = 1.1.14 (13.02.2017)
 * corrected bug that prevented empty cache to function
