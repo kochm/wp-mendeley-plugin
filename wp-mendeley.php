@@ -224,20 +224,10 @@ if (!class_exists("MendeleyPlugin")) {
 					$token = $tmparr[0];
 					switch(strtolower($token)) {
 						case 'authors':
-                        		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
-						        break;
 						case 'editors':
-                        		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
-						        break;
 						case 'mendeley_url':
-                        		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
-						        break;
 						case 'url':
-                        		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
-						        break;
 						case 'doi':
-                        		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
-						        break;
 						case 'isbn':
                         		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
 						        break;
@@ -279,8 +269,6 @@ if (!class_exists("MendeleyPlugin")) {
 					return implode('; ', array_map("detailsFormatMap1", $doc->$token));
 					break;
 				case 'identifiers':
-					return implode(', ', array_map("detailsFormatMap2", $doc->$token));
-					break;
 				case 'tags':
 				case 'keywords':
 					return implode(', ', array_map("detailsFormatMap2", $doc->$token));
