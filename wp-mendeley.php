@@ -101,10 +101,11 @@ if (!class_exists("MendeleyPlugin")) {
 			      // retrieve new authorization token
 			      $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
 			      curl_setopt($curl, CURLOPT_POST, true);
- 			      curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=refresh_token&refresh_token='.urlencode($this->settings['oauth2_refresh_token']).'&client_id='.urlencode($client_id).'&client_secret='.urlencode($client_secret).'&redirect_uri='.urlencode($callback_url));
-			      curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-		 	      // basic authentication ...
-			      curl_setopt($curl, CURLOPT_HTTPHEADER, array('Authorization: Basic ' . base64_encode($client_id . ':' . $client_secret)));
+ 			      curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=refresh_token&refresh_token='.urlencode($this->settings['oauth2_refresh_token']).'&redirect_uri='.urlencode($callback_url));
+			      curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+			      // basic authentication ...
+			      curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+			      curl_setopt($curl, CURLOPT_USERPWD, $client_id . ':' . $client_secret);
 			      $auth = curl_exec($curl);
 			      if ($auth === false) {
 				 $auth = curl_error($curl);
@@ -1001,7 +1002,7 @@ if (!class_exists("MendeleyPlugin")) {
 								curl_setopt($curl, CURLOPT_URL, "http://www.slideshare.net/api/oembed/2?url=" . $urlitem . "&format=json");
 								curl_setopt($curl, CURLOPT_HEADER, false);
 								curl_setopt($curl, CURLOPT_HTTPHEADER, array('User-Agent: CURL'));
-								curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+								curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 								$ans = curl_exec($curl);
 								curl_close($curl);
 
@@ -1606,10 +1607,11 @@ if (!class_exists("MendeleyPlugin")) {
 				   // retrieve full authorization token
 				   $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
 				   curl_setopt($curl, CURLOPT_POST, true);
-				   curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=authorization_code&code='.urlencode($_GET['code']).'&client_id='.urlencode($client_id).'&client_secret='.urlencode($client_secret).'&redirect_uri='.urlencode($callback_url));
-				   curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1);
+				   curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=authorization_code&code='.urlencode($_GET['code']).'&redirect_uri='.urlencode($callback_url));
+				   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 				   // basic authentication ...
-				   curl_setopt($curl, CURLOPT_HTTPHEADER, array('Authorization: Basic ' . base64_encode($client_id . ':' . $client_secret)));
+				   curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+				   curl_setopt($curl, CURLOPT_USERPWD, $client_id . ':' . $client_secret);
 				   $auth = curl_exec($curl);
 				   if ($auth === false) {
 				      $auth = curl_error($curl);
@@ -1649,10 +1651,11 @@ if (!class_exists("MendeleyPlugin")) {
 			   // retrieve new authorization token
 			   $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
 			   curl_setopt($curl, CURLOPT_POST, true);
-			   curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=refresh_token&refresh_token='.urlencode($this->settings['oauth2_refresh_token']).'&client_id='.urlencode($client_id).'&client_secret='.urlencode($client_secret).'&redirect_uri='.urlencode($callback_url));
-			   curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1);
+			   curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=refresh_token&refresh_token='.urlencode($this->settings['oauth2_refresh_token']).'&redirect_uri='.urlencode($callback_url));
+			   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 		 	   // basic authentication ...
-			   curl_setopt($curl, CURLOPT_HTTPHEADER, array('Authorization: Basic ' . base64_encode($client_id . ':' . $client_secret)));
+			   curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+			   curl_setopt($curl, CURLOPT_USERPWD, $client_id . ':' . $client_secret);
 			   $auth = curl_exec($curl);
 			   if ($auth === false) {
 			      $auth = curl_error($curl);
