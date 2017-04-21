@@ -67,9 +67,13 @@ if (!class_exists("MendeleyPlugin")) {
 		protected $options = null;
 		protected $error_message = "";
 		var $expandCounter = 0; // count expandables (in text output)
-		function MendeleyPlugin() { // constructor
+
+                /** constructor */
+		function __construct() {
 			$this->init();
 		}
+
+                /** initialize */
 		function init() {
 			$this->getOptions();
 			$this->initializeDatabase();
