@@ -323,6 +323,11 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.1.17 (22.04.2017)
+* corrected deprecated PHP constructs (thanks to Nils Wötzel for the patch)
+* replaced clientid and client_secret params with HTTP Basic authentication (thanks to Nils Wötzel for the patch)
+* code optimizations (thanks to Nils Wötzel for the patch)
+
 = 1.1.16 (10.03.2017)
 * corrected problem with caching files that are larger than memory limit
 * corrected problem with identifying Imagick extension
