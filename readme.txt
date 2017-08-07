@@ -323,6 +323,12 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.1.18 (07.08.2017)
+* some more adaption to the code to make it work with PHP 7 (replaced deprecated code)
+* add support for setting refresh cycle for caches to "never" (thanks to Constantin Orasan for the patch)
+* add User-Agent header to most CURL calls (for servers that need this stuff)
+* handle missing tags when displaying detail pages
+
 = 1.1.17 (22.04.2017)
 * corrected deprecated PHP constructs (thanks to Nils Wötzel for the patch)
 * replaced clientid and client_secret params with HTTP Basic authentication (thanks to Nils Wötzel for the patch)

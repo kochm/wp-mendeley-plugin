@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.17
+Version: 1.1.18
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.17' );
+define( 'PLUGIN_VERSION' , '1.1.18' );
 define( 'PLUGIN_DB_VERSION', 3 );
 
 /* 
@@ -104,6 +104,7 @@ if (!class_exists("MendeleyPlugin")) {
 			      $callback_url = admin_url('options-general.php?page=wp-mendeley.php&access_mendeleyPluginOAuth2=true');
 			      // retrieve new authorization token
 			      $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
+			      curl_setopt($curl, CURLOPT_HEADER, false);
 			      curl_setopt($curl, CURLOPT_POST, true);
 			      curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=refresh_token&refresh_token='.urlencode($this->settings['oauth2_refresh_token']).'&redirect_uri='.urlencode($callback_url));
 			      curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -138,7 +139,7 @@ if (!class_exists("MendeleyPlugin")) {
 			      $url = MENDELEY_API_URL . $url;
 			   }
 			   $curl = curl_init($url);
-			   curl_setopt($curl, CURLOPT_HTTPHEADER, array('Authorization: Bearer ' . $access_token));
+			   curl_setopt($curl, CURLOPT_HTTPHEADER, array('Authorization: Bearer ' . $access_token, 'User-Agent: CURL'));
 			   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 			   curl_setopt($curl, CURLOPT_VERBOSE, true);
 			   curl_setopt($curl, CURLOPT_HEADER, true);
@@ -763,7 +764,7 @@ if (!class_exists("MendeleyPlugin")) {
 				if (empty($csl_file)) {
 				        $curl = curl_init($csl);
 					curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-					curl_setopt($curl, CURLOPT_HEADER, false);
+					curl_setopt($curl, CURLOPT_HEADER, true);
 					curl_setopt($curl, CURLOPT_HTTPHEADER, array('User-Agent: CURL'));
                         		$csl_file = curl_exec($curl);
 					if ($csl_file === false) {
@@ -996,7 +997,6 @@ if (!class_exists("MendeleyPlugin")) {
 								$curl = curl_init();
 								curl_setopt($curl, CURLOPT_URL, "http://www.slideshare.net/api/oembed/2?" . http_build_query( array( 'url' => $urlitem , 'format' => 'json')));
 								curl_setopt($curl, CURLOPT_HEADER, false);
-								curl_setopt($curl, CURLOPT_HTTPHEADER, array('User-Agent: CURL'));
 								curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 								$ans = curl_exec($curl);
 								curl_close($curl);
@@ -1231,7 +1231,7 @@ if (!class_exists("MendeleyPlugin")) {
 				$delta = 3600;
 				if ($this->settings['cache_docs'] === "day") { $delta = 86400; }
 				if ($this->settings['cache_docs'] === "week") { $delta = 604800; }
-				if ($dbdoc->time + $delta > time()) {
+				if (($this->settings['cache_docs'] === "never") || ($dbdoc->time + $delta > time())) {
 					return json_decode($dbdoc->content);
 				}
 			}
@@ -1248,7 +1248,7 @@ if (!class_exists("MendeleyPlugin")) {
 				$delta = 3600;
 				if ($this->settings['cache_collections'] === "day") { $delta = 86400; }
 				if ($this->settings['cache_collections'] === "week") { $delta = 604800; }
-				if ($dbdoc->time + $delta > time()) {
+				if (($this->settings['cache_docs'] === "never") || ($dbdoc->time + $delta > time())) {
 					return json_decode($dbdoc->content);
 				}
 			}
@@ -1265,7 +1265,7 @@ if (!class_exists("MendeleyPlugin")) {
 				$delta = 3600;
 				if ($this->settings['cache_output'] === "day") { $delta = 86400; }
 				if ($this->settings['cache_output'] === "week") { $delta = 604800; }
-				if ($dbdoc->time + $delta > time()) {
+				if (($this->settings['cache_docs'] === "never") || ($dbdoc->time + $delta > time())) {
 					return $dbdoc->content;
 				}
 			}
@@ -1426,11 +1426,13 @@ if (!class_exists("MendeleyPlugin")) {
 		function getFileCacheUrl($doc) {
 		   // check if url should/can be dispayed
 		   $tags = $doc->tags;
+		   if ($tags) {
 		   foreach($tags as $tag) {
 		      if ($tag === "nofilelink") {
 		         return null;
 		      }
 		   }
+		   } 
 		   $filename = FILE_CACHE_DIR . $doc->id . ".pdf";
 		   if (file_exists($filename)) {
 		      return FILE_CACHE_URL . $doc->id . ".pdf";
@@ -1601,6 +1603,7 @@ if (!class_exists("MendeleyPlugin")) {
 
 				   // retrieve full authorization token
 				   $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
+			           curl_setopt($curl, CURLOPT_HEADER, false);
 				   curl_setopt($curl, CURLOPT_POST, true);
 				   curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=authorization_code&code='.urlencode($_GET['code']).'&redirect_uri='.urlencode($callback_url));
 				   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -1645,6 +1648,7 @@ if (!class_exists("MendeleyPlugin")) {
                 	   $client_secret = $this->settings['oauth2_client_secret'];
 			   // retrieve new authorization token
 			   $curl = curl_init(OAUTH2_REQUEST_TOKEN_ENDPOINT);
+			   curl_setopt($curl, CURLOPT_HEADER, false);
 			   curl_setopt($curl, CURLOPT_POST, true);
 			   curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=refresh_token&refresh_token='.urlencode($this->settings['oauth2_refresh_token']).'&redirect_uri='.urlencode($callback_url));
 			   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -1703,24 +1707,27 @@ For further information a short example is given in the readme.txt or visit the 
 <p>
 Cache folder/group requests
     <select name="cacheCollections" size="1">
-      <option value="no" id="no" <?php if ($this->settings['cache_collections'] === "no") { echo(' selected="selected"'); }?>>no caching</option>
-      <option value="week" id="week" <?php if ($this->settings['cache_collections'] === "week") { echo(' selected="selected"'); }?>>refresh weekly</option>
-      <option value="day" id="day" <?php if ($this->settings['cache_collections'] === "day") { echo(' selected="selected"'); }?>>refresh daily</option>
-      <option value="hour" id="hour" <?php if ($this->settings['cache_collections'] === "hour") { echo(' selected="selected"'); }?>>refresh hourly</option>
+      <option value="no" id="col-no" <?php if ($this->settings['cache_collections'] === "no") { echo(' selected="selected"'); }?>>no caching</option>
+      <option value="never" id="col-never" <?php if ($this->settings['cache_collections'] === "never") { echo(' selected="selected"'); }?>>never refresh</option>
+      <option value="week" id="col-week" <?php if ($this->settings['cache_collections'] === "week") { echo(' selected="selected"'); }?>>refresh weekly</option>
+      <option value="day" id="col-day" <?php if ($this->settings['cache_collections'] === "day") { echo(' selected="selected"'); }?>>refresh daily</option>
+      <option value="hour" id="col-hour" <?php if ($this->settings['cache_collections'] === "hour") { echo(' selected="selected"'); }?>>refresh hourly</option>
     </select><br/>
  Cache document requests
      <select name="cacheDocs" size="1">
-      <option value="no" id="no" <?php if ($this->settings['cache_docs'] === "no") { echo(' selected="selected"'); }?>>no caching</option>
-      <option value="week" id="day" <?php if ($this->settings['cache_docs'] === "week") { echo(' selected="selected"'); }?>>refresh weekly</option>
-      <option value="day" id="day" <?php if ($this->settings['cache_docs'] === "day") { echo(' selected="selected"'); }?>>refresh daily</option>
-      <option value="hour" id="hour" <?php if ($this->settings['cache_docs'] === "hour") { echo(' selected="selected"'); }?>>refresh hourly</option>
+      <option value="no" id="docs-no" <?php if ($this->settings['cache_docs'] === "no") { echo(' selected="selected"'); }?>>no caching</option>
+      <option value="never" id="docs-never" <?php if ($this->settings['cache_docs'] === "never") { echo(' selected="selected"'); }?>>never refresh</option>
+      <option value="week" id="docs-day" <?php if ($this->settings['cache_docs'] === "week") { echo(' selected="selected"'); }?>>refresh weekly</option>
+      <option value="day" id="docs-day" <?php if ($this->settings['cache_docs'] === "day") { echo(' selected="selected"'); }?>>refresh daily</option>
+      <option value="hour" id="docs-hour" <?php if ($this->settings['cache_docs'] === "hour") { echo(' selected="selected"'); }?>>refresh hourly</option>
     </select><br/>
  Cache formated output
     <select name="cacheOutput" size="1">
-      <option value="no" id="no" <?php if ($this->settings['cache_output'] === "no") { echo(' selected="selected"'); }?>>no caching</option>
-      <option value="week" id="week" <?php if ($this->settings['cache_output'] === "week") { echo(' selected="selected"'); }?>>refresh weekly</option>
-      <option value="day" id="day" <?php if ($this->settings['cache_output'] === "day") { echo(' selected="selected"'); }?>>refresh daily</option>
-      <option value="hour" id="hour" <?php if ($this->settings['cache_output'] === "hour") { echo(' selected="selected"'); }?>>refresh hourly</option>
+      <option value="no" id="out-no" <?php if ($this->settings['cache_output'] === "no") { echo(' selected="selected"'); }?>>no caching</option>
+      <option value="never" id="out-never" <?php if ($this->settings['cache_output'] === "never") { echo(' selected="selected"'); }?>>never refresh</option>
+      <option value="week" id="out-week" <?php if ($this->settings['cache_output'] === "week") { echo(' selected="selected"'); }?>>refresh weekly</option>
+      <option value="day" id="outday" <?php if ($this->settings['cache_output'] === "day") { echo(' selected="selected"'); }?>>refresh daily</option>
+      <option value="hour" id="out-hour" <?php if ($this->settings['cache_output'] === "hour") { echo(' selected="selected"'); }?>>refresh hourly</option>
     </select><br/>
 </p>
 

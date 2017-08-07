@@ -1,3 +1,0 @@
-TODOs for the plugin:
-- lookup collections by name
-- improve caching: do in-memory caching
