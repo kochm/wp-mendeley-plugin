@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.18
+Version: 1.1.19
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +10,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.18' );
+define( 'PLUGIN_VERSION' , '1.1.19' );
 define( 'PLUGIN_DB_VERSION', 3 );
 
 /* 
@@ -767,12 +767,21 @@ if (!class_exists("MendeleyPlugin")) {
 					curl_setopt($curl, CURLOPT_HEADER, true);
 					curl_setopt($curl, CURLOPT_HTTPHEADER, array('User-Agent: CURL'));
                         		$csl_file = curl_exec($curl);
-					if ($csl_file === false) {
-					   echo "<p>Mendeley Plugin Error: Failed accessing Menedley API: " . curl_error($curl) . "</p>";
-					   $csl_file = "";
+					if (curl_getinfo($curl, CURLINFO_HTTP_CODE) < 400) {
+					   if ($csl_file === false) {
+					      echo "<p>Mendeley Plugin Error: Failed accessing Menedley API: " . curl_error($curl) . "</p>";
+					      $csl_file = "";
+					   } else {
+					      $pos_body = stripos($csl_file, "<?xml version");
+					      if ($pos_body !== false) {
+					         $csl_file = substr($csl_file, $pos_body);
+					      }
+					      $this->updateOutputInCache($cacheid, $csl_file);
+					   } 
 					} else {
-					   $this->updateOutputInCache($cacheid, $csl_file);
-					} 
+					   echo "<p>Mendeley Plugin Error: Failed accessing Menedley API: " . curl_getinfo($curl, CURLINFO_HTTP_CODE) . "</p>";
+					   $csl_file = "";
+					}
 					curl_close($curl);
 				}
                         	$csl_object = simplexml_load_string($csl_file);

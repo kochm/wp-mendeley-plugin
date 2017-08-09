@@ -323,6 +323,9 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.1.19 (09.08.2017)
+* fixed problem in code for loading CSL template files (thanks to poundsixzeros for helping)
+
 = 1.1.18 (07.08.2017)
 * some more adaption to the code to make it work with PHP 7 (replaced deprecated code)
 * add support for setting refresh cycle for caches to "never" (thanks to Constantin Orasan for the patch)
