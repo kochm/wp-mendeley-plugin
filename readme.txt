@@ -18,7 +18,7 @@ The lists can be included in posts or pages using WordPress shortcodes:
 <pre>
 &#91;mendeley type="folders" id="xxx" groupby="xxx"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx" style="cover,link"&#93;
-&#91;mendeley type="groups" id="xxx" sortby="xxx" sortbyorder="xxx" style="short"&#93;
+&#91;mendeley type="groups" id="xxx" sortby="xxx" sortorder="xxx" style="short"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx" filter="author=Michael Koch"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx" filter="author=Michael Koch;type=journal"&#93;
 &#91;mendeley type="groups" id="xxx" groupby="xxx" filter="type=book_section"&#93;
@@ -28,13 +28,14 @@ The lists can be included in posts or pages using WordPress shortcodes:
 - the attribute "type" can be set to "folders" or "groups" or "own"
 - the attribute "groupby" is optional; possible values currently are: "authors", "year"
 - the attribute "sortby" is optional; possible values currently are: "authors", "year"
-- the attributes "sortbyorder" and "groupbyorder" can have the values "asc" and "desc"
+- the attributes "sortorder" and "grouporder" can have the values "asc" and "desc"
 - sorting on the sort key is done before grouping on the group key if both are provided
 - in "filter" one or more equal matches can be filtered for; if more than one filter rule is specified, than documents are displayed only when all filter rules match 
 - possible attribute names to filter for are: type, title, year, author, editor, publisher, tag, keyword, abstract (when filtering for tag or keyword, a substring search is performed, so "blog" also matches "microblog")
 - possible values for attribute type: ['journal' or 'book' or 'generic' or 'book_section' or 'conference_proceedings' or 'working_paper' or 'report' or 'web_page' or 'thesis' or 'magazine_article' or 'statute' or 'patent' or 'newspaper_article' or 'computer_program' or 'hearing' or 'television_broadcast' or 'encyclopedia_article' or 'case' or 'film' or 'bill']
 - the attribute "style" controlls the output - you can specify several values separated by commas - possible values are: cover (add cover images), link (add links to full texts), short (use a short version - i.e. for widgets - not possible if csl formatting is used)
 - the attribute "csl" is optional; the value must contain a valid URL with a .csl file
+- the attribute "maxdocs" can be used to limit the number of documents displayed (e.g. maxdocs="10")
 </pre>
 
 <h3>Changes in v1.0 (December 2014)</h3>
@@ -323,54 +324,57 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
-= 1.1.19 (09.08.2017)
+= 1.1.20 (16.11.2017) =
+* added support for localization - currently mainly the abbreviations like "p." or "eds."
+
+= 1.1.19 (09.08.2017) =
 * fixed problem in code for loading CSL template files (thanks to poundsixzeros for helping)
 
-= 1.1.18 (07.08.2017)
+= 1.1.18 (07.08.2017) =
 * some more adaption to the code to make it work with PHP 7 (replaced deprecated code)
 * add support for setting refresh cycle for caches to "never" (thanks to Constantin Orasan for the patch)
 * add User-Agent header to most CURL calls (for servers that need this stuff)
 * handle missing tags when displaying detail pages
 
-= 1.1.17 (22.04.2017)
+= 1.1.17 (22.04.2017) =
 * corrected deprecated PHP constructs (thanks to Nils Wötzel for the patch)
 * replaced clientid and client_secret params with HTTP Basic authentication (thanks to Nils Wötzel for the patch)
 * code optimizations (thanks to Nils Wötzel for the patch)
 
-= 1.1.16 (10.03.2017)
+= 1.1.16 (10.03.2017) =
 * corrected problem with caching files that are larger than memory limit
 * corrected problem with identifying Imagick extension
 
-= 1.1.15 (22.02.2017)
+= 1.1.15 (22.02.2017) =
 * fixed bug with custom CSL introduced by recent CURL bug fix
 
-= 1.1.14 (13.02.2017)
+= 1.1.14 (13.02.2017) =
 * corrected bug that prevented empty cache to function
 * corrected bug that made automatic renewal of access tokens fail
 
-= 1.1.13 (26.01.2017)
+= 1.1.13 (26.01.2017) =
 * corrected problem with missing agent in curl calls (thanks to Constantin Orasan for the patch)
 * improved error handling for curl calls
 
-= 1.1.12 (16.12.2016)
+= 1.1.12 (16.12.2016) =
 * corrected bug in database initialization code
 
-= 1.1.11 (16.12.2016)
+= 1.1.11 (16.12.2016) =
 * corrected some minor bugs
 * changed database initialization code to recreate tables when they heve been deleted
 * added information about ids more prominently in the documentation
 
-= 1.1.10 (24.11.2016)
+= 1.1.10 (24.11.2016) =
 * changed MySQL data type for data in mendeleycache table from text to longtext
 * added check for imagick (to avoid the plugin to crash if imagick is not available)
 * updated template to use the Mendeley data in Exhibit
 
-= 1.1.9 (28.07.2016)
+= 1.1.9 (28.07.2016) =
 * added DEFAULT CHARSET in CREATE TABLE statements
 * added check if returned access token is nil
 * checked with Wordpress 4.6 - added note about this
 
-= 1.1.8 (02.02.2016)
+= 1.1.8 (02.02.2016) =
 * replaced hard coded /wp-content/cache with WP_CONTENT_DIR/cache
 
 = 1.1.7 (18.01.2016) =

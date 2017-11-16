@@ -2,7 +2,8 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.19
+Version: 1.1.20
+Text Domain: mendeleyplugin
 
 Author: Michael Koch
 Author URI: http://www.kooperationssysteme.de/personen/koch/
@@ -10,7 +11,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.19' );
+define( 'PLUGIN_VERSION' , '1.1.20' );
 define( 'PLUGIN_DB_VERSION', 3 );
 
 /* 
@@ -78,7 +79,6 @@ if (!class_exists("MendeleyPlugin")) {
 			$this->getOptions();
 			$this->initializeDatabase();
 			$this->initFileCache();
-			load_plugin_textdomain('wp-mendeley');
 		}
 
 		// send an authorized / authenticated request to the Mendeley API
@@ -241,7 +241,7 @@ if (!class_exists("MendeleyPlugin")) {
 							$tmps = "";
 						        $url = $this->getFileCacheUrl($doc);
 							if (!$url==null) {
-							   $tmps = "<a href='$url'>PDF</a>";
+							   $tmps = "<a href='$url'>pdf</a>";
 							}
 							break;
 						case 'coverimage':
@@ -307,7 +307,7 @@ if (!class_exists("MendeleyPlugin")) {
 		     - filter
 		     - maxdocs
 		   - maxdocs: a maximum number of references to be included in the list or 0 if there is no maximum
-		   - style: the style to format the references - possible values (comma separated) are "short", "cover", "link"
+		   - style: the style to format the references - possible values (comma separated) are "short", "cover", "link", "date"
 		*/
 		function formatCollection($attrs = NULL, $maxdocs = 0, $style="") {
 			$type = $attrs['type'];
@@ -842,7 +842,7 @@ if (!class_exists("MendeleyPlugin")) {
 				if ($showlink) {
 				   $url = $this->getFileCacheUrl($doc);
 				   if (!$url==null) {
-				      $result .= " <a href='$url'>PDF</a>";
+				      $result .= " <a href='$url'>pdf</a>";
 				   }
 				}
 			        if (!$textonly) {
@@ -880,7 +880,9 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 			    }
 			    if ($textonly) {
-				$result .= $authors . ' (' . $doc->year . '): ' . $doc->title;
+				$result .= $authors;
+				$result .= ' (' . $doc->year . '): ';
+				$result .= $doc->title;
 				if (isset($doc->source)) {
 					$result .= ', ' . $doc->source;
 				}
@@ -892,11 +894,11 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 				if (isset($doc->editors)) {
 					if (strlen($editors)>0) {
-						$result .= ', ' . $editors . ' (' . __('ed.','wp-mendeley') . ')';
+						$result .= ', ' . $editors . ' (' . __('ed.','mendeleyplugin') . ')';
 					}
 				}
 				if (isset($doc->pages)) {
-					$result .= ', ' . __('p.','wp-mendeley') . ' ' . $doc->pages;
+					$result .= ', ' . __('p.','mendeleyplugin') . ' ' . $doc->pages;
 				}
 				if (isset($doc->publisher)) {
 					if (isset($doc->city)) {
@@ -910,10 +912,12 @@ if (!class_exists("MendeleyPlugin")) {
                                 	$result .= ', doi:' . $doc->identifiers->doi;
 				   }
 				}
-				} else {
-				$result .= '<span class="wpmauthors">' . $authors . '</span> ' .
-			        	'<span class="wpmyear">(' . $doc->year . ')</span> ' . 
-			        	'<span class="wpmtitle">' . $doc->title . '</span>';
+			    } else {
+			        if (strlen($authors)>0) {
+				  $result .= '<span class="wpmauthors">' . $authors . '</span> ';
+				}
+				$result .= '<span class="wpmyear">(' . $doc->year . ')</span> ';
+				$result .= '<span class="wpmtitle">' . $doc->title . '</span>';
 				if (isset($doc->source)) {
 					$result .= ', <span class="wpmoutlet">' . 
 				    	$doc->source . '</span>';
@@ -926,11 +930,11 @@ if (!class_exists("MendeleyPlugin")) {
 				}
 				if (isset($doc->editors)) {
 					if (strlen($editors)>0) {
-						$result .= ', <span class="wpmeditors">' . $editors . ' (' . __('ed.','wp-mendeley') . ')</span>';
+						$result .= ', <span class="wpmeditors">' . $editors . ' (' . __('ed.','mendeleyplugin') . ')</span>';
 					}
 				}
 				if (isset($doc->pages)) {
-					$result .= ', <span class="wpmpages">' . __('p.','wp-mendeley') . ' ' . $doc->pages . '</span>';
+					$result .= ', <span class="wpmpages">' . __('p.','mendeleyplugin') . ' ' . $doc->pages . '</span>';
 				}
 				if (isset($doc->publisher)) {
 					if (isset($doc->city)) {
@@ -1034,7 +1038,7 @@ if (!class_exists("MendeleyPlugin")) {
 			     if ($showlink) {
 				$url = $this->getFileCacheUrl($doc);
 				if (!$url==null) {
-				   $result .= " <a href='$url'>PDF</a>";
+				   $result .= " <a href='$url'>pdf</a>";
 				}
 			     }
 			     if (!$textonly) { 
@@ -1971,6 +1975,12 @@ if (isset($mendeleyPlugin)) {
 	add_action('wp-mendeley/wp-mendeley.php', array(&$mendeleyPlugin,'init'));
 	add_action('admin_menu', 'wp_mendeley_add_pages');
         add_action( 'wp_enqueue_scripts', 'mendeley_scripts_and_styles' );
+
+function mendeleyplugin_load_plugin_textdomain() {
+    load_plugin_textdomain( 'mendeleyplugin' , false, dirname(plugin_basename(__FILE__) ) . '/languages/');
+}
+add_action( 'plugins_loaded', 'mendeleyplugin_load_plugin_textdomain' );
+
 	// Filters
 	// Shortcodes
 	add_shortcode('mendeley', array(&$mendeleyPlugin,'processShortcodeList'));
