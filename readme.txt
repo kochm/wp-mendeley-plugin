@@ -324,6 +324,9 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.2.0 (01.07.2018) =
+* hyperlink DOIs against preferred resolver, see https://www.doi.org/doi_handbook/3_Resolution.html#3.8
+
 = 1.1.20 (16.11.2017) =
 * added support for localization - currently mainly the abbreviations like "p." or "eds."
 
