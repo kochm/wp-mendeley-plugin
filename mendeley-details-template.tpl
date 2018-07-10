@@ -15,7 +15,7 @@
 <p>Tags:<blockquote>{tags}</blockquote></p>
 
 <p>URL: <a href="{url}">{url}</a></p>
-<p>DOI: <a href="http://dx.doi.org/{doi}">{doi}</a></p>
+<p>DOI: <a href="https://doi.org/{doi}">{doi}</a></p>
 <p>ISBN: {isbn}</p>
 
 <a href="{mendeley_url}">Reference on Mendeley.com</a></p>

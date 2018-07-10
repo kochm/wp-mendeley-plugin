@@ -1030,7 +1030,7 @@ if (!class_exists("MendeleyPlugin")) {
 				if (isset($doc->identifiers)) {
 				   if (isset($doc->identifiers->doi)) {
                                 	$atext = "doi:" . $doc->identifiers->doi;
-                                	$result .= ', <span class="wpmurl"><a target="_blank" href="http://dx.doi.org/' . $doc->identifiers->doi . 
+                                	$result .= ', <span class="wpmurl"><a target="_blank" href="https://doi.org/' . $doc->identifiers->doi . 
 						'"><span class="wpmurl' . $atext . '">' . $atext . '</span></a></span>';
                                    }
 				}
