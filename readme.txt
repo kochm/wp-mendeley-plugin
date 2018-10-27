@@ -3,7 +3,7 @@ Contributors: kochm
 Donate link: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
 Tags: bibliography, mendeley
 Requires at least: 4.0
-Tested up to: 4.7
+Tested up to: 5.0
 Stable tag: trunk
 
 Mendeley Plugin for WordPress is a plugin for displaying information from the Mendeley "shared bibliography system" in WordPress blogs.
@@ -26,8 +26,8 @@ The lists can be included in posts or pages using WordPress shortcodes:
 
 - the attribute "id" is the Mendeley identifier of the group or folder - You can find this in Mendeley (Web or desktp app) - or use the function "Request Collection Ids" in the backend of the plugin - example value: 1f0508c0-8256-3ba7-b924-485e720245d5
 - the attribute "type" can be set to "folders" or "groups" or "own"
-- the attribute "groupby" is optional; possible values currently are: "authors", "year"
-- the attribute "sortby" is optional; possible values currently are: "authors", "year"
+- the attribute "groupby" is optional; possible values are all mendeley document attribute - see http://dev.mendeley.com/methods/#core-document-attributes - e.g. "authors", "year"
+- the attribute "sortby" is optional; possible values are the same as for groupby
 - the attributes "sortorder" and "grouporder" can have the values "asc" and "desc"
 - sorting on the sort key is done before grouping on the group key if both are provided
 - in "filter" one or more equal matches can be filtered for; if more than one filter rule is specified, than documents are displayed only when all filter rules match 
@@ -323,6 +323,9 @@ repository to upload bug fixes and other additions.
 == Screenshots ==
 
 == Change log ==
+
+= 1.2.1 (27.10.2018) =
+* test for upcoming Wordpress 5.0
 
 = 1.2.0 (01.07.2018) =
 * hyperlink DOIs against preferred resolver, see https://www.doi.org/doi_handbook/3_Resolution.html#3.8

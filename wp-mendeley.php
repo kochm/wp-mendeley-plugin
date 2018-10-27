@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.1.20
+Version: 1.2.1
 Text Domain: mendeleyplugin
 
 Author: Michael Koch
@@ -11,7 +11,7 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.1.20' );
+define( 'PLUGIN_VERSION' , '1.2.1' );
 define( 'PLUGIN_DB_VERSION', 3 );
 
 /* 
