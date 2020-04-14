@@ -2,7 +2,7 @@
 /*
 Plugin Name: Mendeley Plugin
 Plugin URI: http://www.kooperationssysteme.de/produkte/wpmendeleyplugin/
-Version: 1.2.1
+Version: 1.3.0
 Text Domain: mendeleyplugin
 
 Author: Michael Koch
@@ -11,13 +11,13 @@ License: http://www.opensource.org/licenses/mit-license.php
 Description: This plugin offers the possibility to load lists of document references from Mendeley (shared) collections, and display them in WordPress posts or pages.
 */
 
-define( 'PLUGIN_VERSION' , '1.2.1' );
+define( 'PLUGIN_VERSION' , '1.3.0' );
 define( 'PLUGIN_DB_VERSION', 3 );
 
 /* 
 The MIT License
 
-Copyright (c) 2010-2017 Michael Koch (email: michael.koch@acm.org)
+Copyright (c) 2010-2020 Michael Koch (email: michael.koch@acm.org)
  
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -114,12 +114,12 @@ if (!class_exists("MendeleyPlugin")) {
 			      $auth = curl_exec($curl);
 			      if ($auth === false) {
 				 $auth = curl_error($curl);
-			         $access_token = nil;
+			         $access_token = null;
 			      } else {
 			      	 $secret = json_decode($auth);
 			      	 $access_token = $secret->access_token;
 			      }
-			      if (($access_token != nil) && strlen("$access_token")>0) {			      
+			      if (($access_token != null) && strlen("$access_token")>0) {			      
  				 $this->settings['oauth2_access_token'] = $access_token;
 				 $expires_in = $secret->expires_in;
  				 $this->settings['oauth2_expires_at'] = time()+(integer)$expires_in;
@@ -164,7 +164,7 @@ if (!class_exists("MendeleyPlugin")) {
 			       if ($i === 0) {
                 	           $headers['http_code'] = $line;
 			       } else {
-			           list ($key, $value) = explode(': ', $line);
+			           list ($key, $value) = array_pad(explode(': ', $line), 2, null);
 				   if ($key === "Link") {
 				        $pos1 = strpos($value, "rel=");
 				        if ($pos1) {
@@ -182,9 +182,9 @@ if (!class_exists("MendeleyPlugin")) {
 			   }
 			}
 			$result = json_decode($body);
-			if (!is_null($result->error)) {
+			if (!is_null(@$result->error)) {
 				echo "<p>Mendeley Plugin Error: Got return code " . $result->error . " when trying to access Mendeley API</p>";
-				$error_message = $result->error;
+				$this->error_message = $result->error;
 			}
 			return $result;
 		}
@@ -196,7 +196,7 @@ if (!class_exists("MendeleyPlugin")) {
 
 		// shortcode for displaying details for a particular reference (document)
 		function processShortcodeDetails($attrs = null, $content = null) {
-			$docid = $_GET["docid"];
+			$docid = @$_GET["docid"];
 			if (!$docid) {
 				return 'MendeleyPlugin: No docid specified on details page.';
 			}
@@ -222,10 +222,11 @@ if (!class_exists("MendeleyPlugin")) {
                         }
                         for($i=0;$i<count($matches[0]);$i++) {
 				$tmps = "";
-                                if(isset($doc->$matches[1][$i])) {
-                        		$tmps = $this->detailsFormat($doc, $matches[1][$i]);
+				$tmpattr = @$matches[1][$i];
+                                if(isset($doc->$tmpattr)) {
+                        		$tmps = $this->detailsFormat($doc, $tmpattr);
 				} else {
-					$token = $matches[1][$i];
+					$token = $tmpattr;
 					$tmparr = explode(",", $token, 2);
 					$token = $tmparr[0];
 					switch(strtolower($token)) {
@@ -235,7 +236,7 @@ if (!class_exists("MendeleyPlugin")) {
 						case 'url':
 						case 'doi':
 						case 'isbn':
-                        		                $tmps = $this->detailsFormat($doc, $matches[1][$i]);
+                        		                $tmps = $this->detailsFormat($doc, $tmpattr);
 						        break;
 						case 'filelink':
 							$tmps = "";
@@ -280,16 +281,16 @@ if (!class_exists("MendeleyPlugin")) {
 					return implode(', ', array_map("detailsFormatMap2", $doc->$token));
 					break;
 				case 'doi' :
-				        return $doc->identifiers->doi;
+				        return @$doc->identifiers->doi;
 					break;
 				case 'url' :
-				        return $doc->websites[0];
+				        return @$doc->websites[0];
 					break;
 				case 'mendeley_url' :
 				        return "http://www.mendeley.com/research/".$doc->id."/";
 					break;
 				default:
-					return $doc->$token;
+					return @$doc->$token;
 			}
 		}
 		
@@ -323,7 +324,7 @@ if (!class_exists("MendeleyPlugin")) {
 			}
 
 			// overwrite parameter if set ...
-			$tmpstyle = $attrs['style'];
+			$tmpstyle = @$attrs['style'];
 			if (!empty($tmpstyle)) { $style = $tmpstyle; }
 			$showcover = false;
 			$showlink = false;
@@ -341,13 +342,13 @@ if (!class_exists("MendeleyPlugin")) {
 			if (!(($type === "groups") OR ($type === "folders"))) {
 			   $type = "groups";
 			}
-			$groupby = $attrs['groupby'];
-			$grouporder = $attrs['grouporder'];
+			$groupby = @$attrs['groupby'];
+			$grouporder = @$attrs['grouporder'];
 			if (empty($grouporder)) {
 				$grouporder = "desc";
 			}
-			$sortby = $attrs['sortby'];
-			$sortorder = $attrs['sortorder'];
+			$sortby = @$attrs['sortby'];
+			$sortorder = @$attrs['sortorder'];
 			if (empty($sortorder)) {
 				$sortorder = "asc";
 			}
@@ -359,7 +360,7 @@ if (!class_exists("MendeleyPlugin")) {
 			$csl = (isset($attrs['csl'])?$attrs['csl']:Null) ;
 
 			$filter = (isset($attrs['filter'])?$attrs['filter']:array()) ;
-			$maxtmp = $attrs['maxdocs'];
+			$maxtmp = @$attrs['maxdocs'];
 			if (isset($maxtmp)) {
 				$maxdocs = intval($maxtmp);
 				if ($maxdocs < 0) { $maxdocs = 0; }
@@ -367,11 +368,11 @@ if (!class_exists("MendeleyPlugin")) {
 
 			$result = "";
 			if ($this->settings['debug'] === 'true') {
-				$result .= "<p>Mendeley Plugin: groupby = $groupby, sortby = $sortby, sortorder = $sortorder, filter = $filter</p>";
+				$result .= "<p>Mendeley Plugin: groupby = $groupby, sortby = $sortby, sortorder = $sortorder, filter = ".implode($filter)."</p>";
 			}
 
 			// output caching
-			$cacheid = $type."-".$id."-".$groupby.$grouporder."-".$sortby.$sortorder."-".$filter."-".$maxdocs;
+			$cacheid = $type."-".$id."-".$groupby.$grouporder."-".$sortby.$sortorder."-".implode($filter)."-".$maxdocs;
 			if (isset($csl)) {
 				$cacheid .= "-".$csl;
 			}
@@ -402,11 +403,11 @@ if (!class_exists("MendeleyPlugin")) {
 			} 
 
 			if ($this->settings['debug'] === 'true') {
-				$result .= "<p>Mendeley Plugin: Unfiltered results count: " . count($docarr) . " ($error_message)</p>";
+				$result .= "<p>Mendeley Plugin: Unfiltered results count: " . count($docarr) . " ($this->error_message)</p>";
 			} else {
-				if (strlen($error_message)>0) {
-					$result .= "<p>Mendeley Plugin: no results - error message: $error_message</p>";
-					$error_message = "";
+				if (strlen($this->error_message)>0) {
+					$result .= "<p>Mendeley Plugin: no results - error message: $this->error_message</p>";
+					$this->error_message = "";
 				}
 			}
 
@@ -545,7 +546,7 @@ if (!class_exists("MendeleyPlugin")) {
 			   default:
                                	// other attributes
 				if (!isset($doc->{$filterattr})) {
-				   continue;
+				   continue 2;
 				}
                                 if (!(strcmp($filterval, $doc->{$filterattr})==0)) {
 				   return 0;
@@ -698,7 +699,7 @@ if (!class_exists("MendeleyPlugin")) {
 					}
 				}
 				if (isset($grpval)) {
-					$grpval = $grpval . $doc->added;
+					$grpval = $grpval . @$doc->added;
 					$grpvalues[$grpval][] = $doc;
 				}
 			}
@@ -767,7 +768,7 @@ if (!class_exists("MendeleyPlugin")) {
 					curl_setopt($curl, CURLOPT_HEADER, true);
 					curl_setopt($curl, CURLOPT_HTTPHEADER, array('User-Agent: CURL'));
                         		$csl_file = curl_exec($curl);
-					if (curl_getinfo($curl, CURLINFO_HTTP_CODE) < 400) {
+					if (curl_getinfo($curl, CURLINFO_HTTP_CODE) < 300) {
 					   if ($csl_file === false) {
 					      echo "<p>Mendeley Plugin Error: Failed accessing Menedley API: " . curl_error($curl) . "</p>";
 					      $csl_file = "";
@@ -789,8 +790,8 @@ if (!class_exists("MendeleyPlugin")) {
                                 // stdClass for showing document
                                 $docdata = new stdClass;
                                 $docdata->type = $this->mendeleyType2CiteProcType($doc->type);
-                                $docdata->author = $this->mendeleyNames2CiteProcNames($doc->authors);
-                                $docdata->editor = $this->mendeleyNames2CiteProcNames($doc->editors);
+                                $docdata->author = $this->mendeleyNames2CiteProcNames(@$doc->authors);
+                                $docdata->editor = $this->mendeleyNames2CiteProcNames(@$doc->editors);
 				$docdata->issued = (object) array('date-parts' => array(array($doc->year)));
                                 $docdata->title = $doc->title;
                                 if (isset($doc->published_in)) {
@@ -823,9 +824,9 @@ if (!class_exists("MendeleyPlugin")) {
 				   }
 				}
                                 if (isset($doc->identifiers)) {
-                                        $docdata->DOI = $doc->identifiers->doi;
-                                        $docdata->ISBN = $doc->identifiers->isbn;
-                                        $docdata->PMID = $doc->identifiers->pmid;
+                                        @$docdata->DOI = $doc->identifiers->doi;
+                                        @$docdata->ISBN = $doc->identifiers->isbn;
+                                        @$docdata->PMID = $doc->identifiers->pmid;
 				}
 				// show cover image?
 			        if (!$textonly) {
@@ -863,12 +864,12 @@ if (!class_exists("MendeleyPlugin")) {
 			   	   }
 				}
 			    }
-			    $author_arr = $doc->authors;
+			    $author_arr = @$doc->authors;
 			    $authors = "";
 			    if (is_array($author_arr)) {
 				$authors = $this->comma_separated_names($author_arr);
 			    }
-			    $editor_arr = $doc->editors;
+			    $editor_arr = @$doc->editors;
 			    $editors = "";
 			    if (is_array($editor_arr)) {
 				$editors = $this->comma_separated_names($editor_arr);
@@ -1045,7 +1046,7 @@ if (!class_exists("MendeleyPlugin")) {
 				$result .= "<br clear='all'/>";
 			        $result .= '</p>' . "\n"; 
 		             }
-			     if ($expandable) {
+			     if (isset($expandable) && $expandable) {
 				$result .= '<span class="hidden" id=' . $this->expandCounter . '></span>';
 				$this->expandCounter = $this->expandCounter + 1;
 			     }
@@ -1384,6 +1385,13 @@ if (!class_exists("MendeleyPlugin")) {
 		   $file_name = null;
 		   $filehash = null;
 
+		   if (!isset($doc)) {
+			return;
+		   }
+		   if (!isset($doc->id)) {
+			return;
+		   }
+
 		   // check if we already have a file in the cache
 		   $filename = FILE_CACHE_DIR . $doc->id . ".pdf";
 		   if (file_exists($filename)) {
@@ -1438,7 +1446,7 @@ if (!class_exists("MendeleyPlugin")) {
 		// get the URL to the cached copy of a PDF file or null if there is no cached copy
 		function getFileCacheUrl($doc) {
 		   // check if url should/can be dispayed
-		   $tags = $doc->tags;
+		   $tags = @$doc->tags;
 		   if ($tags) {
 		   foreach($tags as $tag) {
 		      if ($tag === "nofilelink") {
@@ -1468,14 +1476,19 @@ if (!class_exists("MendeleyPlugin")) {
 		      return null;
 		   }
 		   // generate png ...
-		   $im = new imagick($filenamepdf."[0]");
-                   $im->resampleImage (10, 10, imagick::FILTER_UNDEFINED,1);
-                   $im->setCompressionQuality(80);
-                   $im->setImageFormat('png');
-                   $im->writeImage($filename);
-                   $im->clear();
-                   $im->destroy();
-		   return FILE_CACHE_URL . $doc->id . ".png";
+		   try {
+		      $im = new imagick($filenamepdf."[0]");
+                      $im->resampleImage (10, 10, imagick::FILTER_UNDEFINED,1);
+                      $im->setCompressionQuality(80);
+                      $im->setImageFormat('png');
+                      $im->writeImage($filename);
+                      $im->clear();
+                      $im->destroy();
+		      return FILE_CACHE_URL . $doc->id . ".png";
+		   } catch (Exception $e) {
+		      echo "<p>Imagick exception: ".$e->getMessage()."</p>";
+		      return null;
+		   }
 		}
 
 
@@ -1532,7 +1545,7 @@ if (!class_exists("MendeleyPlugin")) {
 		 */
 		function comma_separated_names($nameObjectsArray) {
 			foreach ($nameObjectsArray as &$singleNameObject) {
- 				$singleNameObject = $singleNameObject->first_name . ' ' . $singleNameObject->last_name;
+ 				$singleNameObject = @$singleNameObject->first_name . ' ' . @$singleNameObject->last_name;
 			}
 			return array_reduce($nameObjectsArray, array(&$this, "comma_concatenate"));
 		}
@@ -1626,12 +1639,12 @@ if (!class_exists("MendeleyPlugin")) {
 				   $auth = curl_exec($curl);
 				   if ($auth === false) {
 				      $auth = curl_error($curl);
-				      $access_token = nil;
+				      $access_token = null;
 				   } else {
 				      $secret = json_decode($auth);
 				      $access_token = $secret->access_token;
 				   }
-				   if (($access_token != nil) && strlen("$access_token")>0) {
+				   if (($access_token != null) && strlen("$access_token")>0) {
  				      $this->settings['oauth2_access_token'] = $access_token;
 				      $expires_in = $secret->expires_in;
  				      $this->settings['oauth2_expires_at'] = time()+(integer)$expires_in;
@@ -1671,12 +1684,12 @@ if (!class_exists("MendeleyPlugin")) {
 			   $auth = curl_exec($curl);
 			   if ($auth === false) {
 			      $auth = curl_error($curl);
-			      $access_token = nil;
+			      $access_token = null;
 			   } else {
 			      $secret = json_decode($auth);
 			      $access_token = $secret->access_token;
 			   }
-			   if (($access_token != nil) && strlen("$access_token")>0) {
+			   if (($access_token != null) && strlen("$access_token")>0) {
  			      $this->settings['oauth2_access_token'] = $access_token;
 			      $expires_in = $secret->expires_in;
  			      $this->settings['oauth2_expires_at'] = time()+(integer)$expires_in;
@@ -1950,7 +1963,7 @@ if (!function_exists("wp_mendeley_add_pages")) {
 			return;
 		}
 		if (function_exists('add_options_page')) {
-			add_options_page('WP Mendeley', 'WP Mendeley', 8, basename(__FILE__), array(&$mendeleyPlugin,'printAdminPage'));
+			add_options_page('WP Mendeley', 'WP Mendeley', 'manage_options', basename(__FILE__), array(&$mendeleyPlugin,'printAdminPage'));
 		}
 	}
 }
@@ -2118,8 +2131,14 @@ class MendeleyOwnWidget extends WP_Widget {
 } // class MendleyOwnWidget
 
 // register Mendeley widgets
-add_action('widgets_init', create_function('', 'return register_widget("MendeleyCollectionWidget");'));
-add_action('widgets_init', create_function('', 'return register_widget("MendeleyOwnWidget");'));
+add_action('widgets_init', 'register_mendeleyCollectionWidget');
+add_action('widgets_init', 'register_mendeleyOwnWidget');
+function register_mendeleyCollectionWidget() {
+  register_widget("MendeleyCollectionWidget");
+}
+function register_mendeleyOwnWidget() {
+  register_widget("MendeleyOwnWidget");
+}
 
 
 /***************************************************************************
