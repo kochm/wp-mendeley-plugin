@@ -290,7 +290,9 @@ for curl on the resulting page. If support is enabled, there will be a
 listing for it.</p>
 
 <p>For the cover images functionality, you need to have imagick 
-and php support for imagick support installed on your system.</p>
+and php support for imagick support installed on your system. 
+If you receive "Imagick not authorized" exceptions, please
+check the policy.xml in the Imagick installation.</p>
 
 <p>There are some reported problems with other plugins that are using
 the OAuth PHP library like tweetblender: If the other plugin does not
@@ -323,6 +325,10 @@ repository to upload bug fixes and other additions.
 == Screenshots ==
 
 == Change log ==
+
+= 1.3.1 (16.04.2020) =
+* fixed problem with cache ids (created by warning fixes in 1.3.0)
+* fixed some more PHP warnings 
 
 = 1.3.0 (13.04.2020) =
 * fixed PHP warnings that appeared when WP_DEBUG was switched on in PHP 7.4
