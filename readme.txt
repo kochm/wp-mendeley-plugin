@@ -326,6 +326,9 @@ repository to upload bug fixes and other additions.
 
 == Change log ==
 
+= 1.3.2 (04.06.2021) =
+* fixed problem with refreshing access tokens (wrong error message)
+
 = 1.3.1 (16.04.2020) =
 * fixed problem with cache ids (created by warning fixes in 1.3.0)
 * fixed some more PHP warnings 
